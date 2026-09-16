@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using Wilt.Models;
 using Wilt.Native;
 using Wilt.Services;
@@ -89,6 +90,31 @@ public partial class OverlayWindow : Window
     }
 
     // ----- Placement / multi-monitor (PRD 9.2) -----
+    //
+    // System.Windows.Forms.Screen reports monitor bounds in *physical* pixels,
+    // while WPF's Window.Left/Top/ActualWidth are in *device-independent*
+    // units (96 DPI). On any display scaled above 100% (125%/150% is the
+    // default on most laptops) mixing the two without converting places the
+    // window far outside the visible screen — it renders, just off in space.
+    // All placement math below converts through the window's DPI transform.
+
+    private Rect WorkAreaToDip(Screen screen)
+    {
+        var wa = screen.WorkingArea;
+        var source = PresentationSource.FromVisual(this);
+        var m = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+        var topLeft = m.Transform(new Point(wa.Left, wa.Top));
+        var bottomRight = m.Transform(new Point(wa.Right, wa.Bottom));
+        return new Rect(topLeft, bottomRight);
+    }
+
+    private System.Drawing.Point DipToPhysicalPoint(double x, double y)
+    {
+        var source = PresentationSource.FromVisual(this);
+        var m = source?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
+        var p = m.Transform(new Point(x, y));
+        return new System.Drawing.Point((int)p.X, (int)p.Y);
+    }
 
     private void PlaceOnRememberedMonitor(AppSettings settings)
     {
@@ -108,7 +134,7 @@ public partial class OverlayWindow : Window
         {
             // Default: bottom-right corner of the primary display, inset (PRD 9.2).
             var margin = 24;
-            var workArea = screen.WorkingArea;
+            var workArea = WorkAreaToDip(screen);
             Left = workArea.Right - ActualWidth - margin;
             Top = workArea.Bottom - ActualHeight - margin;
         }
@@ -116,7 +142,7 @@ public partial class OverlayWindow : Window
 
     private void EnsureOnScreen(Screen screen)
     {
-        var wa = screen.WorkingArea;
+        var wa = WorkAreaToDip(screen);
         if (Left < wa.Left || Left > wa.Right || Top < wa.Top || Top > wa.Bottom)
         {
             Left = wa.Right - ActualWidth - 24;
@@ -129,7 +155,8 @@ public partial class OverlayWindow : Window
         var settings = _settingsService.Current.Clone();
         settings.OverlayLeft = Left;
         settings.OverlayTop = Top;
-        var screen = Screen.FromPoint(new System.Drawing.Point((int)(Left + ActualWidth / 2), (int)(Top + ActualHeight / 2)));
+        var physicalCenter = DipToPhysicalPoint(Left + ActualWidth / 2, Top + ActualHeight / 2);
+        var screen = Screen.FromPoint(physicalCenter);
         settings.OverlayMonitorId = screen.DeviceName;
         _settingsService.Save(settings);
     }
