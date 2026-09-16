@@ -125,7 +125,7 @@ public class TimerEngine
             return;
         }
 
-        AdvanceToNextPhase();
+        AdvanceToNextPhase(autoContinue: true);
     }
 
     private void OnTick(object? sender, EventArgs e)
@@ -137,7 +137,9 @@ public class TimerEngine
 
             if (ElapsedSeconds >= PhaseDurationSeconds && PhaseDurationSeconds > 0)
             {
-                AdvanceToNextPhase();
+                // Auto-start is disabled: a phase ending on its own hands control
+                // back to the user rather than silently rolling into the next one.
+                AdvanceToNextPhase(autoContinue: false);
             }
         }
 
@@ -171,10 +173,14 @@ public class TimerEngine
     /// <summary>
     /// Advances from the current phase to the next one in rotation (Focus ->
     /// break -> Focus...), used by natural tick-based completion and by
-    /// Skip. Always keeps the timer running, unlike Finish which stops at
-    /// Inviting.
+    /// Skip. The next phase always begins at full duration/reset Energy;
+    /// <paramref name="autoContinue"/> controls whether it starts running
+    /// immediately (Skip's explicit "move on now") or waits paused for the
+    /// user to press Start/Resume (natural completion - auto-start is
+    /// disabled so a finished session doesn't silently roll into the next
+    /// one unattended).
     /// </summary>
-    private void AdvanceToNextPhase()
+    private void AdvanceToNextPhase(bool autoContinue)
     {
         var completed = Phase;
         _timer.Stop();
@@ -199,7 +205,11 @@ public class TimerEngine
             BeginPhase(Phase.Focus);
         }
 
-        RunState = RunState.Running;
+        RunState = autoContinue ? RunState.Running : RunState.Paused;
+
+        // Keep the tick loop running even when paused: OnTick's RunState
+        // guard is what actually holds time/Energy still, but Tick must
+        // keep firing so the UI (clock, ring, character) keeps refreshing.
         _timer.Start();
     }
 

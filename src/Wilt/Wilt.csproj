@@ -24,4 +24,15 @@
     <Company>Wilt</Company>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="Resources\Characters\student.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SAPI-based speech synthesis for the end-of-session voice line;
+         ships as part of the Windows Desktop shared framework, referenced
+         by simple name rather than a NuGet package. -->
+    <Reference Include="System.Speech" />
+  </ItemGroup>
+
 </Project>

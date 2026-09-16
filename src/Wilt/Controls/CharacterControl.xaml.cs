@@ -10,15 +10,15 @@ using Wilt.Models;
 namespace Wilt.Controls;
 
 /// <summary>
-/// The animated character rig (PRD section 7). A continuous Energy value
-/// (0-100) drives the base pose (posture lean, head droop, blink rate) via
-/// simple interpolation, and a separate randomized one-shot "action clip"
-/// layer (PRD 7.4) plays short gestures (typing, sipping coffee, yawning...)
-/// on top of it. This is the hand-authored fallback the PRD names in 7.3 as
-/// an alternative to a licensed Rive rig; the Energy/EnergyState surface
-/// mirrors what a `energy` Rive state-machine input would drive, so a real
-/// .riv rig can later replace this control's internals without touching
-/// callers.
+/// The animated character rig (PRD section 7), built around the user-supplied
+/// illustration (a single flattened image, not a layered rig). Since the
+/// artwork has no separable limbs, animation works at two levels instead of
+/// the per-limb approach a vector rig would use:
+///  - a continuous Energy-driven whole-body transform (lean, sink, breathe)
+///    for the base pose, applied every timer tick;
+///  - a randomized one-shot "action clip" layer (PRD 7.4) that plays small
+///    whole-body gestures (a bounce, a tilt, a stretch) plus an eyelid
+///    overlay for blinking/yawning, since the eyes are baked into the image.
 /// </summary>
 public partial class CharacterControl : System.Windows.Controls.UserControl
 {
@@ -29,6 +29,21 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
     public static readonly DependencyProperty WhimsyEmbellishmentsProperty = DependencyProperty.Register(
         nameof(WhimsyEmbellishments), typeof(bool), typeof(CharacterControl),
         new PropertyMetadata(false));
+
+    public static readonly DependencyProperty ProgressProperty = DependencyProperty.Register(
+        nameof(Progress), typeof(double), typeof(CharacterControl),
+        new PropertyMetadata(0.0, OnProgressChanged));
+
+    public double Progress
+    {
+        get => (double)GetValue(ProgressProperty);
+        set => SetValue(ProgressProperty, value);
+    }
+
+    private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        ((CharacterControl)d).HeadRing.Progress = (double)e.NewValue;
+    }
 
     public CharacterSkin Skin
     {
@@ -48,16 +63,17 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
     private ActionClip? _lastAction;
     private EnergyState _currentState = EnergyState.Inviting;
     private double _currentEnergy = 100;
+    private bool _isBlinking;
 
     // Smoothed (lerp'd) values so posture changes read as organic rather than stepped.
     private double _smoothLean;
-    private double _smoothHeadDroop;
     private double _smoothSink;
+    private double _smoothBreath = 1.0;
 
     public CharacterControl()
     {
         InitializeComponent();
-        ApplySkinBrushes(Skin);
+        ApplyGlowColor(Skin);
 
         _actionTimer = new DispatcherTimer();
         _actionTimer.Tick += (_, _) => PlayRandomAction();
@@ -75,22 +91,23 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
     private static void OnSkinChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (CharacterControl)d;
-        control.ApplySkinBrushes((CharacterSkin)e.NewValue);
+        control.ApplyGlowColor((CharacterSkin)e.NewValue);
     }
 
-    private void ApplySkinBrushes(CharacterSkin skin)
+    private void ApplyGlowColor(CharacterSkin skin)
     {
-        // Only the vest re-colors per skin; sleeves/shirt stay cream and the
-        // hat/hair/skin tone stay fixed, since those are the character's
-        // identity rather than a "theme color".
+        // The artwork itself isn't re-tinted (it's a fixed illustration); the
+        // skin choice instead re-colors the ambient glow behind the character.
         var color = skin switch
         {
-            CharacterSkin.Amber => Color.FromRgb(0x6E, 0x40, 0x28),
-            CharacterSkin.Mint => Color.FromRgb(0x1E, 0x4A, 0x3D),
-            _ => Color.FromRgb(0x1F, 0x2A, 0x44),
+            CharacterSkin.Amber => Color.FromRgb(0xC9, 0x7A, 0x3A),
+            CharacterSkin.Mint => Color.FromRgb(0x4E, 0x9B, 0x84),
+            _ => Color.FromRgb(0x2E, 0x7D, 0x6B),
         };
 
-        TorsoBody.Fill = new SolidColorBrush(color);
+        GlowStopInner.Color = Color.FromArgb(0x55, color.R, color.G, color.B);
+        GlowStopOuter.Color = Color.FromArgb(0x00, color.R, color.G, color.B);
+        HeadRing.ProgressBrush = new SolidColorBrush(color);
     }
 
     /// <summary>Called every timer tick (~30fps) from the host window to drive the continuous base pose.</summary>
@@ -99,76 +116,83 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
         _currentEnergy = energy;
         _currentState = state;
 
-        // Target posture values per state; Energy itself provides the fine-grained
-        // interpolation within the Focus band so motion feels continuous (PRD 7.1).
-        double targetLean, targetHeadDroop, targetSink;
+        double targetLean, targetSink;
 
         switch (state)
         {
             case EnergyState.Inviting:
-                targetLean = -2; targetHeadDroop = -3; targetSink = 0;
+                targetLean = -1.5; targetSink = 0;
                 break;
             case EnergyState.Fresh:
-                targetLean = 0; targetHeadDroop = 0; targetSink = 0;
+                targetLean = 0; targetSink = 0;
                 break;
             case EnergyState.Focused:
-                targetLean = 3; targetHeadDroop = 1; targetSink = 1;
+                targetLean = 2; targetSink = 1;
                 break;
             case EnergyState.Tiring:
-                targetLean = 7; targetHeadDroop = 4; targetSink = 3;
+                targetLean = 4.5; targetSink = 3;
                 break;
             case EnergyState.Tired:
-                targetLean = 12; targetHeadDroop = 9; targetSink = 6;
+                targetLean = 8; targetSink = 6;
                 break;
             case EnergyState.Exhausted:
-                targetLean = 18; targetHeadDroop = 16; targetSink = 10;
+                targetLean = 13; targetSink = 10;
                 break;
             case EnergyState.Recovering:
-                // Recovers proportionally with Energy climbing back toward 100.
                 var recoveredFraction = Math.Clamp(energy / 100.0, 0, 1);
-                targetLean = 10 * (1 - recoveredFraction);
-                targetHeadDroop = 8 * (1 - recoveredFraction);
-                targetSink = 5 * (1 - recoveredFraction);
+                targetLean = 9 * (1 - recoveredFraction);
+                targetSink = 7 * (1 - recoveredFraction);
                 break;
             case EnergyState.Reset:
-                targetLean = -1; targetHeadDroop = -2; targetSink = 0;
+                targetLean = -0.5; targetSink = 0;
                 break;
             case EnergyState.Paused:
                 // Hold at whatever the current smoothed pose is (frozen tiredness, PRD 7.0/7.1).
-                targetLean = _smoothLean; targetHeadDroop = _smoothHeadDroop; targetSink = _smoothSink;
+                targetLean = _smoothLean; targetSink = _smoothSink;
                 break;
             default:
-                targetLean = 0; targetHeadDroop = 0; targetSink = 0;
+                targetLean = 0; targetSink = 0;
                 break;
         }
 
         var lerp = animateImmediately ? 1.0 : 0.06;
         _smoothLean += (targetLean - _smoothLean) * lerp;
-        _smoothHeadDroop += (targetHeadDroop - _smoothHeadDroop) * lerp;
         _smoothSink += (targetSink - _smoothSink) * lerp;
 
-        TorsoRotate.Angle = _smoothLean;
-        TorsoTranslate.Y = _smoothSink;
-        HeadRotate.Angle = _smoothLean * 0.6 + _smoothHeadDroop;
+        BodyRotate.Angle = _smoothLean;
+        BodyTranslate.Y = _smoothSink;
+
+        // Slow breathing pulse, subtler than the action-clip layer's bounces.
+        var breathPhase = Math.Sin(Environment.TickCount64 / 1400.0) * 0.006;
+        var targetBreath = 1.0 + breathPhase;
+        _smoothBreath += (targetBreath - _smoothBreath) * (animateImmediately ? 1.0 : 0.15);
+        BodyScale.ScaleX = _smoothBreath;
+        BodyScale.ScaleY = _smoothBreath;
 
         // Eyes droop (partially close) toward Exhausted, independent of the blink loop.
         var droopFloor = state switch
         {
-            EnergyState.Exhausted => 0.25,
-            EnergyState.Tired => 0.55,
-            EnergyState.Tiring => 0.8,
-            _ => 1.0,
+            EnergyState.Exhausted => 0.7,
+            EnergyState.Tired => 0.4,
+            EnergyState.Tiring => 0.15,
+            _ => 0.0,
         };
-        if (Math.Abs(EyeLeftScale.ScaleY - droopFloor) > 0.01 && !_isBlinking)
+        if (!_isBlinking)
         {
-            EyeLeftScale.ScaleY = droopFloor;
-            EyeRightScale.ScaleY = droopFloor;
+            EyeLidLeftScale.ScaleY = droopFloor;
+            EyeLidRightScale.ScaleY = droopFloor;
         }
+
+        TiredOverlay.Opacity = state switch
+        {
+            EnergyState.Tiring => 0.06,
+            EnergyState.Tired => 0.14,
+            EnergyState.Exhausted => 0.24,
+            _ => 0.0,
+        };
 
         ZzzMotif.Opacity = (WhimsyEmbellishments && state == EnergyState.Exhausted) ? 0.8 : 0.0;
     }
-
-    private bool _isBlinking;
 
     private void ScheduleNextBlink()
     {
@@ -195,25 +219,21 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
 
         _isBlinking = true;
 
-        // A single close-then-open keyframe timeline per eye, so there's no
-        // handoff conflict between a separate "close" and "open" animation
-        // fighting over the same property.
         var blink = new DoubleAnimationUsingKeyFrames();
-        blink.KeyFrames.Add(new LinearDoubleKeyFrame(0.05, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(90))));
-        blink.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(230))));
+        blink.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(90))));
+        blink.KeyFrames.Add(new LinearDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(230))));
 
-        // Release the animation clock once it finishes so plain property
-        // assignments in ApplyState (e.g. the Exhausted droop floor) take
-        // effect again afterward, instead of staying pinned by a filling clock.
         blink.Completed += (_, _) =>
         {
             _isBlinking = false;
-            EyeLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            EyeRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            EyeLidLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            EyeLidRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            // Re-apply the current droop floor now that the blink clock released the property.
+            ApplyState(_currentEnergy, _currentState, animateImmediately: true);
         };
 
-        EyeLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
-        EyeRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
+        EyeLidLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
+        EyeLidRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
     }
 
     private void ScheduleNextAction()
@@ -256,156 +276,139 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
         Play(chosen);
     }
 
+    /// <summary>
+    /// Maps each action clip to one of a handful of whole-body gestures,
+    /// since the flattened artwork has no separable limbs to animate
+    /// independently. Variety comes from which gesture plays and how often,
+    /// keyed to the current Energy band (PRD 7.4), not per-clip uniqueness.
+    /// </summary>
     private void Play(ActionClip clip)
     {
         switch (clip)
         {
             case ActionClip.Typing:
-                AnimateArm(FrontArmRotate, -8, 8, 260, repeats: 3);
+            case ActionClip.JotNote:
+            case ActionClip.TidyDesk:
+                Bounce();
                 break;
             case ActionClip.SipCoffee:
-                AnimateSipCoffee();
+            case ActionClip.DrinkWater:
+            case ActionClip.GlanceSideMonitor:
+            case ActionClip.GlanceAtStart:
+            case ActionClip.LookOutWindow:
+            case ActionClip.WalkOffAndBack:
+                Glance();
                 break;
             case ActionClip.QuickStretch:
             case ActionClip.StandAndStretch:
-                AnimateArm(BackArmRotate, 0, -40, 500, repeats: 1, autoReverse: true);
+            case ActionClip.BeckonGesture:
+                Stretch();
                 break;
             case ActionClip.Yawn:
-                AnimateYawn();
+                Yawn();
                 break;
             case ActionClip.RubEyes:
-                AnimateArm(FrontArmRotate, 0, -25, 350, repeats: 1, autoReverse: true);
-                break;
             case ActionClip.RestChinOnHand:
-                AnimateArm(FrontArmRotate, 0, -30, 600, repeats: 1, autoReverse: false, returnAfterMs: 2500);
+            case ActionClip.BlankStare:
+                SlowBlinkHold();
                 break;
             case ActionClip.NeckRoll:
-                AnimateHeadRoll();
-                break;
-            case ActionClip.JotNote:
-                AnimateArm(FrontArmRotate, 0, -10, 200, repeats: 4);
-                break;
-            case ActionClip.GlanceSideMonitor:
-            case ActionClip.GlanceAtStart:
-            case ActionClip.BlankStare:
-                AnimateHeadGlance();
-                break;
             case ActionClip.AdjustGlasses:
-                AnimateArm(FrontArmRotate, 0, -15, 250, repeats: 1, autoReverse: true);
-                break;
-            case ActionClip.DrinkWater:
-                AnimateSipCoffee();
-                break;
-            case ActionClip.WalkOffAndBack:
-            case ActionClip.LookOutWindow:
-                AnimateHeadGlance();
-                break;
-            case ActionClip.BeckonGesture:
-                AnimateArm(BackArmRotate, 0, -20, 300, repeats: 2, autoReverse: true);
-                break;
-            case ActionClip.TidyDesk:
-                AnimateArm(FrontArmRotate, 0, 12, 300, repeats: 2, autoReverse: true);
+                Tilt();
                 break;
             case ActionClip.BreatheLoop:
             case ActionClip.FootTap:
             case ActionClip.PenTwirl:
-                // Subtle idle fidget; a small head bob reads as "still alive" without being showy.
-                AnimateHeadGlance();
+                Bounce(small: true);
                 break;
         }
     }
 
-    private void AnimateArm(RotateTransform transform, double from, double to, int durationMs, int repeats,
-        bool autoReverse = false, int returnAfterMs = 0)
+    private void Bounce(bool small = false)
     {
-        var anim = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(durationMs))
+        var amount = small ? 2.0 : 4.0;
+        var anim = new DoubleAnimation(_smoothSink, _smoothSink - amount, TimeSpan.FromMilliseconds(160))
         {
-            AutoReverse = autoReverse,
-            RepeatBehavior = new RepeatBehavior(repeats),
+            AutoReverse = true,
+            RepeatBehavior = new RepeatBehavior(small ? 1 : 2),
         };
-
-        if (returnAfterMs > 0)
-        {
-            anim.Completed += (_, _) =>
-            {
-                var returnAnim = new DoubleAnimation(0, TimeSpan.FromMilliseconds(300))
-                {
-                    BeginTime = TimeSpan.FromMilliseconds(returnAfterMs),
-                };
-                transform.BeginAnimation(RotateTransform.AngleProperty, returnAnim);
-            };
-        }
-        else
-        {
-            anim.Completed += (_, _) => transform.BeginAnimation(RotateTransform.AngleProperty, null);
-        }
-
-        transform.BeginAnimation(RotateTransform.AngleProperty, anim);
+        anim.Completed += (_, _) => BodyTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        BodyTranslate.BeginAnimation(TranslateTransform.YProperty, anim);
     }
 
-    private void AnimateHeadGlance()
+    private void Glance()
     {
-        var anim = new DoubleAnimation(0, 12, TimeSpan.FromMilliseconds(400))
+        var current = BodyRotate.Angle;
+        var anim = new DoubleAnimation(current, current + (_random.Next(2) == 0 ? 6 : -6), TimeSpan.FromMilliseconds(420))
         {
             AutoReverse = true,
         };
-        anim.Completed += (_, _) => HeadTranslate.BeginAnimation(TranslateTransform.XProperty, null);
-        HeadTranslate.BeginAnimation(TranslateTransform.XProperty, anim);
+        anim.Completed += (_, _) => BodyRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+        BodyRotate.BeginAnimation(RotateTransform.AngleProperty, anim);
     }
 
-    private void AnimateHeadRoll()
+    private void Tilt()
     {
-        var anim = new DoubleAnimation(0, 10, TimeSpan.FromMilliseconds(700))
+        var current = BodyRotate.Angle;
+        var anim = new DoubleAnimation(current, current - 5, TimeSpan.FromMilliseconds(500))
         {
             AutoReverse = true,
         };
-        var current = HeadRotate.Angle;
-        anim.From = current;
-        anim.To = current + 10;
-        anim.Completed += (_, _) => HeadRotate.BeginAnimation(RotateTransform.AngleProperty, null);
-        HeadRotate.BeginAnimation(RotateTransform.AngleProperty, anim);
+        anim.Completed += (_, _) => BodyRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+        BodyRotate.BeginAnimation(RotateTransform.AngleProperty, anim);
     }
 
-    private void AnimateYawn()
+    private void Stretch()
     {
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
-        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300)) { BeginTime = TimeSpan.FromMilliseconds(900) };
-        var mouthFadeIn = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200));
-        var mouthFadeOut = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300)) { BeginTime = TimeSpan.FromMilliseconds(900) };
+        var scaleAnim = new DoubleAnimation(_smoothBreath, _smoothBreath * 1.04, TimeSpan.FromMilliseconds(450))
+        {
+            AutoReverse = true,
+        };
+        scaleAnim.Completed += (_, _) =>
+        {
+            BodyScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            BodyScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        };
+        BodyScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnim);
+        BodyScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
 
-        var sb = new Storyboard();
-        Storyboard.SetTarget(fadeIn, MouthYawn);
-        Storyboard.SetTargetProperty(fadeIn, new PropertyPath(OpacityProperty));
-        Storyboard.SetTarget(fadeOut, MouthYawn);
-        Storyboard.SetTargetProperty(fadeOut, new PropertyPath(OpacityProperty));
-        Storyboard.SetTarget(mouthFadeIn, MouthNeutral);
-        Storyboard.SetTargetProperty(mouthFadeIn, new PropertyPath(OpacityProperty));
-        Storyboard.SetTarget(mouthFadeOut, MouthNeutral);
-        Storyboard.SetTargetProperty(mouthFadeOut, new PropertyPath(OpacityProperty));
-        sb.Children.Add(fadeIn);
-        sb.Children.Add(fadeOut);
-        sb.Children.Add(mouthFadeIn);
-        sb.Children.Add(mouthFadeOut);
-        sb.Begin();
-
-        AnimateArm(FrontArmRotate, 0, -35, 400, repeats: 1, autoReverse: true);
+        var riseAnim = new DoubleAnimation(_smoothSink, _smoothSink - 6, TimeSpan.FromMilliseconds(450))
+        {
+            AutoReverse = true,
+        };
+        riseAnim.Completed += (_, _) => BodyTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        BodyTranslate.BeginAnimation(TranslateTransform.YProperty, riseAnim);
     }
 
-    private void AnimateSipCoffee()
+    private void SlowBlinkHold()
     {
-        var raise = new DoubleAnimation(0, -20, TimeSpan.FromMilliseconds(400)) { AutoReverse = true };
-        raise.Completed += (_, _) => FrontArmRotate.BeginAnimation(RotateTransform.AngleProperty, null);
-        FrontArmRotate.BeginAnimation(RotateTransform.AngleProperty, raise);
+        if (_isBlinking)
+        {
+            return;
+        }
 
-        var fadeIn = new DoubleAnimation(1, TimeSpan.FromMilliseconds(150));
-        var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200)) { BeginTime = TimeSpan.FromMilliseconds(650) };
-        var sb = new Storyboard();
-        Storyboard.SetTarget(fadeIn, CoffeeCup);
-        Storyboard.SetTargetProperty(fadeIn, new PropertyPath(OpacityProperty));
-        Storyboard.SetTarget(fadeOut, CoffeeCup);
-        Storyboard.SetTargetProperty(fadeOut, new PropertyPath(OpacityProperty));
-        sb.Children.Add(fadeIn);
-        sb.Children.Add(fadeOut);
-        sb.Begin();
+        _isBlinking = true;
+
+        // Hold the "eyes mostly closed" pose for a beat before reopening.
+        var hold = new DoubleAnimationUsingKeyFrames();
+        hold.KeyFrames.Add(new LinearDoubleKeyFrame(0.85, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(250))));
+        hold.KeyFrames.Add(new LinearDoubleKeyFrame(0.85, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(900))));
+        hold.KeyFrames.Add(new LinearDoubleKeyFrame(_currentEnergy > 25 ? 0.0 : 0.5, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1150))));
+        hold.Completed += (_, _) =>
+        {
+            _isBlinking = false;
+            EyeLidLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            EyeLidRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            ApplyState(_currentEnergy, _currentState, animateImmediately: true);
+        };
+
+        EyeLidLeftScale.BeginAnimation(ScaleTransform.ScaleYProperty, hold);
+        EyeLidRightScale.BeginAnimation(ScaleTransform.ScaleYProperty, hold);
+    }
+
+    private void Yawn()
+    {
+        SlowBlinkHold();
+        Tilt();
     }
 }

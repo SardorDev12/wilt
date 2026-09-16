@@ -15,14 +15,15 @@ requirements document (see `docs/prd.md`).
 - **Win32 interop** (via `Native/NativeMethods.cs`) for the always-on-top,
   layered, click-through, non-activating overlay window behavior
   (`WS_EX_TOPMOST`, `WS_EX_LAYERED`, `WS_EX_TRANSPARENT`, `WS_EX_NOACTIVATE`).
-- **Character rendering**: a hand-authored, vector-based (WPF `Path`/shape)
-  rig driven by a single continuous `Energy` (0–100) value plus a
-  randomized action-clip layer — this is the sprite/`Storyboard`-based
-  fallback approach the PRD calls out in section 7.3 as an alternative to a
-  licensed Rive rig, chosen here since no Rive asset pipeline/license is
-  available in this environment. The `CharacterControl` is the single
-  integration point, so swapping in a real Rive `.riv` rig later only
-  touches that one control.
+- **Character rendering**: a custom illustration (`Resources/Characters/student.png`)
+  driven by a single continuous `Energy` (0–100) value that transforms the
+  whole figure (lean, sink, breathe) plus an eyelid overlay for blinking,
+  with a randomized action-clip layer of whole-body gestures layered on top
+  — the raster equivalent of the sprite/`Storyboard`-based fallback the PRD
+  calls out in section 7.3 as an alternative to a licensed Rive rig. The
+  `CharacterControl` is the single integration point, so swapping in a real
+  Rive `.riv` rig (or a different illustration) later only touches that one
+  control.
 
 ## Project layout
 
@@ -67,13 +68,16 @@ MVP implementing the "Must have" scope from the PRD:
 - Always-on-screen character overlay (Inviting / Fresh / Focused / Tiring /
   Tired / Exhausted / Recovering / Reset / Paused states) driven by a
   continuous Energy value, with a randomized action-clip layer.
-- Start / Pause-Resume / Finish controls and a circular time-remaining ring
-  built into the overlay widget.
+- Start / Pause-Resume / Finish controls and a circular time-remaining halo
+  built into the overlay widget. Auto-start is disabled: when a session ends
+  on its own, the next phase begins paused, waiting for the user to resume
+  (Skip remains an explicit "move on now" action and does auto-continue).
 - System tray icon with quick actions and a live tooltip.
 - Settings window (durations, sessions-until-long-break, overlay size,
   opacity, click-through, sound, launch-on-startup, character skin) that
   applies changes live, including mid-session proportional duration rescale.
-- End-of-session/break audio cue.
+- End-of-session/break audio cue: a soft chime plus a short spoken line via
+  Windows' built-in speech synthesizer (SAPI).
 - Local JSON-based settings + session history persistence, no network calls.
 - Should-have extras: local stats panel, multiple skins, per-monitor
   position memory, global hotkeys for start/pause/skip.

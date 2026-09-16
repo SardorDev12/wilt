@@ -1,16 +1,38 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <SolidColorBrush x:Key="WiltAccentBrush" Color="#8BC3A8" />
-    <SolidColorBrush x:Key="WiltAccentDimBrush" Color="#55FFFFFF" />
-    <SolidColorBrush x:Key="WiltTextBrush" Color="#F2F2F2" />
-    <SolidColorBrush x:Key="WiltControlBgBrush" Color="#CC2B2B33" />
+    <SolidColorBrush x:Key="WiltAccentBrush" Color="#2E7D6B" />
+    <SolidColorBrush x:Key="WiltAccentDimBrush" Color="#552E7D6B" />
+    <SolidColorBrush x:Key="WiltTextBrush" Color="#F5F3EE" />
+    <SolidColorBrush x:Key="WiltTextDimBrush" Color="#B8B5AE" />
     <SolidColorBrush x:Key="WiltWindowBgBrush" Color="#F5F5F7" />
+
+    <!-- "Glass" capsule chrome: a dark translucent fill, a faint top highlight
+         edge, and a soft outer glow, used for both the control strip and the
+         clock/controls capsule so the whole widget reads as one cohesive
+         material rather than flat boxes. -->
+    <LinearGradientBrush x:Key="WiltCapsuleBgBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#E4232329" Offset="0" />
+        <GradientStop Color="#EE17171B" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WiltCapsuleBorderBrush" Color="#22FFFFFF" />
+
+    <Style x:Key="WiltCapsuleBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource WiltCapsuleBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource WiltCapsuleBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="14" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.35" />
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style x:Key="WiltIconButton" TargetType="Button">
         <Setter Property="Width" Value="26" />
         <Setter Property="Height" Value="26" />
-        <Setter Property="Background" Value="{StaticResource WiltControlBgBrush}" />
+        <Setter Property="Background" Value="#00FFFFFF" />
         <Setter Property="Foreground" Value="{StaticResource WiltTextBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="FontSize" Value="12" />
@@ -18,9 +40,39 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="13">
+                    <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="13">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource WiltAccentDimBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource WiltAccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Primary (Start) button: filled accent pill instead of the plain icon style,
+         so the single call-to-action stands out from the secondary controls. -->
+    <Style x:Key="WiltPrimaryButton" TargetType="Button" BasedOn="{StaticResource WiltIconButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bg" Background="{StaticResource WiltAccentBrush}" CornerRadius="13">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Opacity" Value="0.85" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Opacity" Value="0.7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

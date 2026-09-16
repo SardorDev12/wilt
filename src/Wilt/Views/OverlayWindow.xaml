@@ -30,8 +30,8 @@
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
 
             <!-- Hover control strip: skip / settings / quit (PRD 9.1) -->
-            <Border x:Name="ControlStrip" Background="{StaticResource WiltControlBgBrush}" CornerRadius="14"
-                    Padding="6,3" Margin="0,0,0,6" HorizontalAlignment="Center" Opacity="0" IsHitTestVisible="False">
+            <Border x:Name="ControlStrip" Style="{StaticResource WiltCapsuleBorder}" CornerRadius="15"
+                    Padding="7,4" Margin="0,0,0,8" HorizontalAlignment="Center" Opacity="0" IsHitTestVisible="False">
                 <StackPanel Orientation="Horizontal">
                     <Button x:Name="SkipButton" Content="⏭" Style="{StaticResource WiltIconButton}" Click="OnSkipClick"
                             ToolTip="Skip to next phase" Margin="0,0,4,0" />
@@ -42,22 +42,20 @@
                 </StackPanel>
             </Border>
 
-            <!-- Character + progress ring, draggable -->
+            <!-- Character, draggable. Its own progress halo/glow are built in. -->
             <Grid x:Name="CharacterHost" HorizontalAlignment="Center"
                   MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
-                <controls:ProgressRing x:Name="Ring" Diameter="210" Thickness="5" />
-                <controls:CharacterControl x:Name="Character" Width="180" Height="180"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <controls:CharacterControl x:Name="Character" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Grid>
 
             <!-- Clock + primary controls, always reachable with a single click (PRD 9.1.1) -->
-            <Border Background="{StaticResource WiltControlBgBrush}" CornerRadius="16" Padding="10,5" Margin="0,6,0,0"
+            <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,8,0,0"
                     HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="TimeText" Text="25:00" Foreground="{StaticResource WiltTextBrush}"
-                               FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="2,0,8,0"
-                               MinWidth="44" />
-                    <Button x:Name="StartButton" Content="▶" Style="{StaticResource WiltIconButton}"
+                               FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
+                               VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
+                    <Button x:Name="StartButton" Content="▶" Style="{StaticResource WiltPrimaryButton}"
                             Click="OnStartClick" ToolTip="Start" />
                     <Button x:Name="PauseResumeButton" Content="⏸" Style="{StaticResource WiltIconButton}"
                             Click="OnPauseResumeClick" ToolTip="Pause/Resume" Margin="4,0,0,0" Visibility="Collapsed" />
