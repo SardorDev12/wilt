@@ -37,15 +37,26 @@ src/Wilt/
   Views/                     OverlayWindow, SettingsWindow, StatsPanel
 ```
 
-## Building
+## Building (Visual Studio not required)
 
-Requires the .NET 8 SDK with the Windows desktop workload (Visual Studio or
-`dotnet` on Windows — WPF cannot build/run on Linux/macOS).
+WPF only builds/runs on Windows, so this must be built on a Windows machine.
+You only need the free **.NET 8 SDK** — no Visual Studio install required:
 
-```
-dotnet build Wilt.sln
-dotnet run --project src/Wilt/Wilt.csproj
-```
+1. Install the .NET 8 SDK: https://dotnet.microsoft.com/download/dotnet/8.0
+   (pick the "SDK" x64 installer, not "Runtime").
+2. Open PowerShell/cmd in this repo folder and either:
+   - Double-click / run `build.bat` — produces a single self-contained
+     `publish\Wilt.exe` you can run directly, no .NET install needed on the
+     machine that runs it; or
+   - Run it manually for a quick dev build instead:
+     ```
+     dotnet build Wilt.sln
+     dotnet run --project src/Wilt/Wilt.csproj
+     ```
+
+If `dotnet build`/`build.bat` reports errors, copy the full output — that's
+the fastest way to get a fix, since this repo was authored without access to
+a Windows machine to compile it directly.
 
 ## Status
 
