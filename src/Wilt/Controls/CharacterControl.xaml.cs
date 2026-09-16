@@ -80,17 +80,17 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
 
     private void ApplySkinBrushes(CharacterSkin skin)
     {
+        // Only the vest re-colors per skin; sleeves/shirt stay cream and the
+        // hat/hair/skin tone stay fixed, since those are the character's
+        // identity rather than a "theme color".
         var color = skin switch
         {
-            CharacterSkin.Amber => Color.FromRgb(0xC9, 0x7A, 0x3A),
-            CharacterSkin.Mint => Color.FromRgb(0x4E, 0x9B, 0x84),
-            _ => Color.FromRgb(0x54, 0x63, 0x78),
+            CharacterSkin.Amber => Color.FromRgb(0x6E, 0x40, 0x28),
+            CharacterSkin.Mint => Color.FromRgb(0x1E, 0x4A, 0x3D),
+            _ => Color.FromRgb(0x1F, 0x2A, 0x44),
         };
-        var brush = new SolidColorBrush(color);
 
-        TorsoBody.Fill = brush;
-        BackArm.Stroke = brush;
-        FrontArm.Stroke = brush;
+        TorsoBody.Fill = new SolidColorBrush(color);
     }
 
     /// <summary>Called every timer tick (~30fps) from the host window to drive the continuous base pose.</summary>
