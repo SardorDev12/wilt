@@ -13,7 +13,16 @@
         SizeToContent="WidthAndHeight"
         MouseEnter="OnMouseEnterOverlay"
         MouseLeave="OnMouseLeaveOverlay">
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid" Background="#01000000">
+        <!--
+          Background is alpha=1 (imperceptible) rather than fully transparent
+          on purpose: this is a per-pixel-alpha layered window (AllowsTransparency),
+          so Windows only routes mouse input to pixels that are actually drawn.
+          A truly transparent (alpha=0) area never receives hover/click at all,
+          which is why the control strip only appeared when the cursor landed on
+          an exact rendered pixel. This near-invisible background makes the
+          whole widget rectangle hoverable.
+        -->
         <Grid.RenderTransform>
             <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1" />
         </Grid.RenderTransform>
