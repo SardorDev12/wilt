@@ -4,7 +4,15 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <!--
+      Disabled: with both UseWPF and UseWindowsForms set, ImplicitUsings
+      auto-injects global usings for BOTH System.Windows and
+      System.Windows.Forms/System.Drawing project-wide, which makes
+      "Application", "Brush", etc. ambiguous even in files that never
+      reference WinForms. Every file in this project already has its own
+      explicit using directives, so this is safe to turn off.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Wilt</AssemblyName>
