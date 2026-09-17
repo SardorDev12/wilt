@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Wilt.Controls;
 using Wilt.Models;
 using Wilt.Native;
 using Wilt.Services;
@@ -26,6 +27,7 @@ public partial class OverlayWindow : Window
 
     private IntPtr _hwnd;
     private bool _isPointerOver;
+    private ICharacterView _activeCharacter;
 
     public OverlayWindow(TimerEngine timerEngine, SettingsService settingsService, HistoryService historyService)
     {
@@ -33,6 +35,9 @@ public partial class OverlayWindow : Window
         _timerEngine = timerEngine;
         _settingsService = settingsService;
         _historyService = historyService;
+
+        _activeCharacter = StandingCharacter;
+        _activeCharacter.SetActive(true);
 
         SourceInitialized += OnSourceInitialized;
         Loaded += (_, _) => ApplySettings(_settingsService.Current, initialPlacement: true);
@@ -68,8 +73,10 @@ public partial class OverlayWindow : Window
         OverlayScaleTransform.ScaleX = settings.OverlayScale;
         OverlayScaleTransform.ScaleY = settings.OverlayScale;
         Opacity = settings.OverlayOpacity;
-        Character.Skin = settings.Skin;
-        Character.WhimsyEmbellishments = settings.WhimsyEmbellishments;
+
+        SwitchPose(settings.Pose);
+        _activeCharacter.Skin = settings.Skin;
+        _activeCharacter.WhimsyEmbellishments = settings.WhimsyEmbellishments;
 
         if (_hwnd != IntPtr.Zero)
         {
@@ -87,6 +94,27 @@ public partial class OverlayWindow : Window
     private void ApplyClickThrough(bool enabled)
     {
         NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_TRANSPARENT, enabled);
+    }
+
+    /// <summary>
+    /// Switches which character pose is shown (PRD-inspired "Could have":
+    /// user-selectable alternate poses). Both controls stay in the visual
+    /// tree; only the active one is visible and has its timers running.
+    /// </summary>
+    private void SwitchPose(CharacterPose pose)
+    {
+        var desired = pose == CharacterPose.SittingAtDesk ? (ICharacterView)SittingCharacter : StandingCharacter;
+        if (ReferenceEquals(desired, _activeCharacter))
+        {
+            return;
+        }
+
+        _activeCharacter.SetActive(false);
+        ((UIElement)_activeCharacter).Visibility = Visibility.Collapsed;
+
+        _activeCharacter = desired;
+        ((UIElement)_activeCharacter).Visibility = Visibility.Visible;
+        _activeCharacter.SetActive(true);
     }
 
     // ----- Placement / multi-monitor (PRD 9.2) -----
@@ -274,7 +302,7 @@ public partial class OverlayWindow : Window
     private void UpdateVisualState()
     {
         var state = _timerEngine.GetEnergyState();
-        Character.ApplyState(_timerEngine.Energy, state);
+        _activeCharacter.ApplyState(_timerEngine.Energy, state);
 
         // Ring shows *remaining* time depleting (PRD 9.1.1), so it starts full
         // and shrinks toward empty as the session progresses.

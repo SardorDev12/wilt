@@ -42,10 +42,14 @@
                 </StackPanel>
             </Border>
 
-            <!-- Character (draggable) with the session-progress ring beside it -->
+            <!-- Character (draggable) with the session-progress ring beside it. Both
+                 poses are always in the tree; only the selected one is visible/active
+                 (PRD-inspired "Could have": alternate poses, user-selectable in Settings). -->
             <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
                         VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
-                <controls:CharacterControl x:Name="Character" VerticalAlignment="Center" />
+                <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
+                <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
+                                                Visibility="Collapsed" />
                 <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" VerticalAlignment="Center"
                                         Margin="10,0,0,0" />
             </StackPanel>

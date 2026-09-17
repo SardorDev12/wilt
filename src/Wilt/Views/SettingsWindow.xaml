@@ -51,6 +51,12 @@
             <CheckBox x:Name="ClickThroughCheckBox" Content="Click-through (mouse clicks pass to the app underneath)"
                       Margin="0,10,0,0" Checked="OnBehaviorChanged" Unchecked="OnBehaviorChanged" />
 
+            <TextBlock Text="Character pose" Margin="0,10,0,4" />
+            <ComboBox x:Name="PoseComboBox" SelectionChanged="OnPoseChanged" HorizontalAlignment="Left" Width="150">
+                <ComboBoxItem Content="Standing" Tag="Standing" />
+                <ComboBoxItem Content="Sitting at a desk" Tag="SittingAtDesk" />
+            </ComboBox>
+
             <TextBlock Text="Character skin" Margin="0,10,0,4" />
             <ComboBox x:Name="SkinComboBox" SelectionChanged="OnSkinChanged" HorizontalAlignment="Left" Width="150">
                 <ComboBoxItem Content="Slate" Tag="Slate" />

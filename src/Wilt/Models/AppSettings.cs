@@ -7,6 +7,16 @@ public enum CharacterSkin
     Mint,
 }
 
+/// <summary>Which character rig the overlay displays.</summary>
+public enum CharacterPose
+{
+    /// <summary>Standing, full-body illustration (<see cref="Wilt.Controls.CharacterControl"/>).</summary>
+    Standing,
+
+    /// <summary>Seated at a desk, working (<see cref="Wilt.Controls.DeskCharacterControl"/>).</summary>
+    SittingAtDesk,
+}
+
 /// <summary>User-configurable settings, persisted as JSON in %AppData%\Wilt\settings.json.</summary>
 public class AppSettings
 {
@@ -21,6 +31,7 @@ public class AppSettings
     public bool SoundEnabled { get; set; } = true;
     public bool LaunchOnStartup { get; set; } = false;
     public CharacterSkin Skin { get; set; } = CharacterSkin.Slate;
+    public CharacterPose Pose { get; set; } = CharacterPose.Standing;
 
     public bool WhimsyEmbellishments { get; set; } = false;
 

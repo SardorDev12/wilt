@@ -20,7 +20,7 @@ namespace Wilt.Controls;
 ///    whole-body gestures (a bounce, a tilt, a stretch) plus an eyelid
 ///    overlay for blinking/yawning, since the eyes are baked into the image.
 /// </summary>
-public partial class CharacterControl : System.Windows.Controls.UserControl
+public partial class CharacterControl : System.Windows.Controls.UserControl, ICharacterView
 {
     public static readonly DependencyProperty SkinProperty = DependencyProperty.Register(
         nameof(Skin), typeof(CharacterSkin), typeof(CharacterControl),
@@ -63,14 +63,27 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
         _actionTimer = new DispatcherTimer();
         _actionTimer.Tick += (_, _) => PlayRandomAction();
         ScheduleNextAction();
-        _actionTimer.Start();
 
         _blinkTimer = new DispatcherTimer();
         _blinkTimer.Tick += (_, _) => Blink();
         ScheduleNextBlink();
-        _blinkTimer.Start();
 
         Loaded += (_, _) => ApplyState(_currentEnergy, _currentState, animateImmediately: true);
+    }
+
+    /// <summary>Starts/stops the blink and action-clip timers (this pose isn't the active one otherwise).</summary>
+    public void SetActive(bool active)
+    {
+        if (active)
+        {
+            _actionTimer.Start();
+            _blinkTimer.Start();
+        }
+        else
+        {
+            _actionTimer.Stop();
+            _blinkTimer.Stop();
+        }
     }
 
     private static void OnSkinChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

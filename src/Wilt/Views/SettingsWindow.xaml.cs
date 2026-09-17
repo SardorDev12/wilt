@@ -54,6 +54,15 @@ public partial class SettingsWindow : Window
                 break;
             }
         }
+
+        foreach (ComboBoxItem item in PoseComboBox.Items)
+        {
+            if ((string)item.Tag == s.Pose.ToString())
+            {
+                PoseComboBox.SelectedItem = item;
+                break;
+            }
+        }
     }
 
     private void RefreshStats()
@@ -126,6 +135,18 @@ public partial class SettingsWindow : Window
 
         var s = CurrentDraft();
         s.Skin = Enum.Parse<CharacterSkin>((string)item.Tag);
+        _settingsService.Save(s);
+    }
+
+    private void OnPoseChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || PoseComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        var s = CurrentDraft();
+        s.Pose = Enum.Parse<CharacterPose>((string)item.Tag);
         _settingsService.Save(s);
     }
 
