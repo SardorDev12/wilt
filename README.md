@@ -79,7 +79,8 @@ MVP implementing the "Must have" scope from the PRD:
   opacity, click-through, sound, launch-on-startup, character skin) that
   applies changes live, including mid-session proportional duration rescale.
 - End-of-session/break audio cue: a soft chime plus a short spoken line via
-  Windows' built-in speech synthesizer (SAPI).
+  Windows' built-in speech synthesizer (SAPI), plus a native Windows tray
+  notification so it's still noticeable if the overlay is out of view.
 - Local JSON-based settings + session history persistence, no network calls.
 - Should-have extras: local stats panel, multiple skins, per-monitor
   position memory, global hotkeys for start/pause/skip.
