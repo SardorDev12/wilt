@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Wilt.Controls;
 using Wilt.Models;
 using Wilt.Native;
@@ -237,9 +238,7 @@ public partial class OverlayWindow : Window
 
     // ----- Primary controls (PRD 9.1.1) -----
 
-    private void OnStartClick(object sender, RoutedEventArgs e) => _timerEngine.Start();
-
-    private void OnPauseResumeClick(object sender, RoutedEventArgs e) => _timerEngine.TogglePauseResume();
+    private void OnPlayPauseClick(object sender, RoutedEventArgs e) => _timerEngine.TogglePauseResume();
 
     private void OnFinishClick(object sender, RoutedEventArgs e)
     {
@@ -313,10 +312,48 @@ public partial class OverlayWindow : Window
             : FormatTime(_timerEngine.RemainingSeconds);
 
         var isInviting = _timerEngine.Phase == Phase.Inviting;
-        StartButton.Visibility = isInviting ? Visibility.Visible : Visibility.Collapsed;
-        PauseResumeButton.Visibility = isInviting ? Visibility.Collapsed : Visibility.Visible;
         FinishButton.Visibility = isInviting ? Visibility.Collapsed : Visibility.Visible;
-        PauseResumeButton.Content = _timerEngine.RunState == RunState.Running ? "⏸" : "▶";
+
+        // Not running - whether never started or a session just ended and is
+        // waiting on the user (auto-start is disabled) - gets the filled
+        // accent pill plus a gentle pulse so it's impossible to miss.
+        // Actively running gets the plain, quiet pause icon.
+        var needsAttention = _timerEngine.RunState != RunState.Running;
+        PlayPauseButton.Content = needsAttention ? "▶" : "⏸";
+        PlayPauseButton.ToolTip = needsAttention ? "Start" : "Pause";
+        PlayPauseButton.Style = (Style)FindResource(needsAttention ? "WiltPrimaryButton" : "WiltIconButton");
+        SetPlayPausePulse(needsAttention);
+    }
+
+    private bool _isPulseActive;
+
+    private void SetPlayPausePulse(bool active)
+    {
+        if (active == _isPulseActive)
+        {
+            return;
+        }
+
+        _isPulseActive = active;
+
+        if (active)
+        {
+            var pulse = new DoubleAnimation(1.0, 1.14, TimeSpan.FromMilliseconds(650))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+            };
+            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleXProperty, pulse);
+            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleYProperty, pulse);
+        }
+        else
+        {
+            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            PlayPauseScale.ScaleX = 1;
+            PlayPauseScale.ScaleY = 1;
+        }
     }
 
     private static string FormatMinutes(int minutes) => FormatTime(minutes * 60.0);

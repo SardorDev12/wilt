@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Resource Include="Resources\Characters\student.png" />
+    <Resource Include="Resources\Characters\student_desk.png" />
   </ItemGroup>
 
   <ItemGroup>

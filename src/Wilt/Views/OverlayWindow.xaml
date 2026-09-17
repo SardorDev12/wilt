@@ -61,10 +61,17 @@
                     <TextBlock x:Name="TimeText" Text="25:00" Foreground="{StaticResource WiltTextBrush}"
                                FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
                                VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
-                    <Button x:Name="StartButton" Content="▶" Style="{StaticResource WiltPrimaryButton}"
-                            Click="OnStartClick" ToolTip="Start" />
-                    <Button x:Name="PauseResumeButton" Content="⏸" Style="{StaticResource WiltIconButton}"
-                            Click="OnPauseResumeClick" ToolTip="Pause/Resume" Margin="4,0,0,0" Visibility="Collapsed" />
+
+                    <!-- Single play/pause button: filled accent pill + a gentle pulse
+                         whenever it needs a click (not started, or a session just ended
+                         and is waiting to resume - PRD-inspired "make the user notice"),
+                         plain style while a session is actively running. -->
+                    <Button x:Name="PlayPauseButton" Content="▶" Style="{StaticResource WiltPrimaryButton}"
+                            Click="OnPlayPauseClick" ToolTip="Start" RenderTransformOrigin="0.5,0.5">
+                        <Button.RenderTransform>
+                            <ScaleTransform x:Name="PlayPauseScale" ScaleX="1" ScaleY="1" />
+                        </Button.RenderTransform>
+                    </Button>
                     <Button x:Name="FinishButton" Content="⏹" Style="{StaticResource WiltIconButton}"
                             Click="OnFinishClick" ToolTip="Finish session" Margin="4,0,0,0" Visibility="Collapsed" />
                 </StackPanel>
