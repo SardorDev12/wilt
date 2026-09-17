@@ -9,7 +9,16 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight">
-    <!-- Bare icon, no pill/border chrome - just the button itself. -->
-    <Button Content="🔓" Style="{StaticResource WiltIconButton}"
-            Click="OnDisableClick" ToolTip="Click to turn click-through off" />
+    <!--
+      A small opaque backing is required, not optional: this window sits
+      directly over the desktop/whatever app is beneath it, so a bare
+      transparent-background icon can disappear entirely against a light
+      or busy background. This is the same circular size any other icon
+      button in the app uses (26px) - not a pill, not a label, just enough
+      of a dark chip for the icon to stay visible everywhere.
+    -->
+    <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource WiltCapsuleBgBrush}">
+        <Button Content="🔓" Style="{StaticResource WiltIconButton}"
+                Click="OnDisableClick" ToolTip="Click to turn click-through off" />
+    </Border>
 </Window>
