@@ -27,8 +27,8 @@ public partial class OverlayWindow : Window
     private readonly SoundService _soundService = new();
 
     private IntPtr _hwnd;
-    private bool _isPointerOver;
     private ICharacterView _activeCharacter;
+    private ClickThroughIndicatorWindow? _clickThroughIndicator;
 
     public OverlayWindow(TimerEngine timerEngine, SettingsService settingsService, HistoryService historyService)
     {
@@ -42,6 +42,8 @@ public partial class OverlayWindow : Window
 
         SourceInitialized += OnSourceInitialized;
         Loaded += (_, _) => ApplySettings(_settingsService.Current, initialPlacement: true);
+        LocationChanged += (_, _) => PositionClickThroughIndicator();
+        SizeChanged += (_, _) => PositionClickThroughIndicator();
 
         _settingsService.SettingsChanged += (_, settings) => Dispatcher.Invoke(() => ApplySettings(settings, initialPlacement: false));
 
@@ -81,8 +83,12 @@ public partial class OverlayWindow : Window
 
         if (_hwnd != IntPtr.Zero)
         {
-            ApplyClickThrough(settings.ClickThrough && !_isPointerOver);
+            ApplyClickThrough(settings.ClickThrough);
         }
+
+        ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
+        ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
+        SetClickThroughIndicatorVisible(settings.ClickThrough);
 
         if (initialPlacement)
         {
@@ -95,6 +101,57 @@ public partial class OverlayWindow : Window
     private void ApplyClickThrough(bool enabled)
     {
         NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_TRANSPARENT, enabled);
+    }
+
+    // ----- Click-through toggle (PRD 9.3) -----
+    //
+    // WS_EX_TRANSPARENT makes a window invisible to mouse input at the Win32
+    // level for its entire client area - there's no way to exempt one button
+    // inside it. So once click-through is on, nothing in this window
+    // (including this same control strip) can be clicked, hover included.
+    // ClickThroughIndicatorWindow is a separate small window, positioned
+    // over where the control strip sits, that's never made click-through
+    // itself - the one thing guaranteed to still work, so the user is never
+    // stuck with an unreachable overlay.
+
+    private void OnClickThroughToggleClick(object sender, RoutedEventArgs e)
+    {
+        var settings = _settingsService.Current.Clone();
+        settings.ClickThrough = !settings.ClickThrough;
+        _settingsService.Save(settings);
+    }
+
+    private void SetClickThroughIndicatorVisible(bool visible)
+    {
+        if (visible)
+        {
+            if (_clickThroughIndicator == null)
+            {
+                _clickThroughIndicator = new ClickThroughIndicatorWindow(_settingsService);
+                // Its own size isn't known until first layout; reposition once it is.
+                _clickThroughIndicator.SizeChanged += (_, _) => PositionClickThroughIndicator();
+            }
+
+            _clickThroughIndicator.Show();
+            PositionClickThroughIndicator();
+        }
+        else
+        {
+            _clickThroughIndicator?.Hide();
+        }
+    }
+
+    private void PositionClickThroughIndicator()
+    {
+        if (_clickThroughIndicator is not { IsVisible: true })
+        {
+            return;
+        }
+
+        // Same horizontal center, flush with the top edge - matching where
+        // the (now unreachable) control strip sits within this window.
+        _clickThroughIndicator.Left = Left + (ActualWidth - _clickThroughIndicator.ActualWidth) / 2;
+        _clickThroughIndicator.Top = Top;
     }
 
     /// <summary>
@@ -208,32 +265,23 @@ public partial class OverlayWindow : Window
         }
     }
 
-    // ----- Hover control strip (PRD 9.1, 9.3) -----
+    // ----- Hover control strip (PRD 9.1) -----
+    //
+    // These only fire while this window isn't click-through - once it is,
+    // the OS stops delivering mouse input to it entirely (see the
+    // click-through section below), so there's nothing to suspend/restore
+    // here anymore; ClickThroughIndicatorWindow handles that case instead.
 
     private void OnMouseEnterOverlay(object sender, MouseEventArgs e)
     {
-        _isPointerOver = true;
         ControlStrip.Opacity = 1;
         ControlStrip.IsHitTestVisible = true;
-
-        // Suspend click-through while the control strip is visible/hovered so
-        // users can still reach it (PRD 9.3).
-        if (_hwnd != IntPtr.Zero)
-        {
-            ApplyClickThrough(false);
-        }
     }
 
     private void OnMouseLeaveOverlay(object sender, MouseEventArgs e)
     {
-        _isPointerOver = false;
         ControlStrip.Opacity = 0;
         ControlStrip.IsHitTestVisible = false;
-
-        if (_hwnd != IntPtr.Zero)
-        {
-            ApplyClickThrough(_settingsService.Current.ClickThrough);
-        }
     }
 
     // ----- Primary controls (PRD 9.1.1) -----

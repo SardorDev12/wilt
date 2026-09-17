@@ -29,7 +29,12 @@
 
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
 
-            <!-- Hover control strip: skip / settings / quit (PRD 9.1) -->
+            <!-- Hover control strip: skip / settings / click-through / quit (PRD 9.1, 9.3).
+                 The click-through button only really matters while click-through is OFF
+                 here - once it's ON, this whole strip (and the rest of the window) stops
+                 receiving mouse input entirely at the OS level, so a separate always-on-top
+                 ClickThroughIndicatorWindow (never made click-through itself) takes over as
+                 the one thing still clickable, letting the user always turn it back off. -->
             <Border x:Name="ControlStrip" Style="{StaticResource WiltCapsuleBorder}" CornerRadius="15"
                     Padding="7,4" Margin="0,0,0,8" HorizontalAlignment="Center" Opacity="0" IsHitTestVisible="False">
                 <StackPanel Orientation="Horizontal">
@@ -37,6 +42,8 @@
                             ToolTip="Skip to next phase" Margin="0,0,4,0" />
                     <Button x:Name="SettingsButton" Content="⚙" Style="{StaticResource WiltIconButton}"
                             Click="OnSettingsClick" ToolTip="Settings" Margin="0,0,4,0" />
+                    <Button x:Name="ClickThroughButton" Content="🔒" Style="{StaticResource WiltIconButton}"
+                            Click="OnClickThroughToggleClick" ToolTip="Enable click-through" Margin="0,0,4,0" />
                     <Button x:Name="QuitButton" Content="⏻" Style="{StaticResource WiltIconButton}" Click="OnQuitClick"
                             ToolTip="Quit Wilt" />
                 </StackPanel>

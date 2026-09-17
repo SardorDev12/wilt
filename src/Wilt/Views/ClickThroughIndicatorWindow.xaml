@@ -1,0 +1,16 @@
+<Window x:Class="Wilt.Views.ClickThroughIndicatorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Wilt - click-through"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight">
+    <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,5">
+        <Button Content="🔓 Click-through on" Style="{StaticResource WiltPrimaryPillButton}"
+                Click="OnDisableClick" ToolTip="Click to turn click-through off" />
+    </Border>
+</Window>
