@@ -56,32 +56,9 @@
         </Setter>
     </Style>
 
-    <!-- Primary (Start) button: filled accent pill instead of the plain icon style,
-         so the single call-to-action stands out from the secondary controls. -->
-    <Style x:Key="WiltPrimaryButton" TargetType="Button" BasedOn="{StaticResource WiltIconButton}">
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bg" Background="{StaticResource WiltAccentBrush}" CornerRadius="13">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg" Property="Opacity" Value="0.85" />
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bg" Property="Opacity" Value="0.7" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Wide labeled accent pill ("Start Focus", "Start Break", "Resume") -
-         used instead of the small round WiltPrimaryButton whenever the user
-         needs to explicitly kick something off, so it reads as a real
-         call-to-action rather than just a bigger icon. -->
+    <!-- Wide labeled accent pill ("Start Focus", "Start Break", "Resume"),
+         shown over the character whenever the user needs to explicitly kick
+         something off, so it reads as a real call-to-action. -->
     <Style x:Key="WiltPrimaryPillButton" TargetType="Button">
         <Setter Property="Height" Value="30" />
         <Setter Property="Padding" Value="16,0" />

@@ -4,7 +4,6 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using Wilt.Controls;
 using Wilt.Models;
 using Wilt.Native;
@@ -86,8 +85,6 @@ public partial class OverlayWindow : Window
             ApplyClickThrough(settings.ClickThrough);
         }
 
-        ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
-        ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
         if (initialPlacement)
@@ -366,24 +363,15 @@ public partial class OverlayWindow : Window
 
         // Not running - whether never started, a session just ended and is
         // queued waiting on the user (auto-start is disabled - nothing times
-        // down until Start is pressed), or manually paused mid-session -
-        // gets a wide labeled accent pill plus a gentle pulse so it's
-        // impossible to miss. Actively running gets the plain, quiet pause icon.
+        // down until Start is pressed), or manually paused mid-session - shows
+        // the wide labeled accent pill over the character. Actively running
+        // shows just the plain, quiet pause icon in the clock row instead.
         var needsAttention = _timerEngine.RunState != RunState.Running;
-        if (needsAttention)
-        {
-            PlayPauseButton.Content = isInviting ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
-            PlayPauseButton.ToolTip = isInviting ? PendingPhaseLabel(pendingPhase) : "Resume";
-            PlayPauseButton.Style = (Style)FindResource("WiltPrimaryPillButton");
-        }
-        else
-        {
-            PlayPauseButton.Content = "⏸";
-            PlayPauseButton.ToolTip = "Pause";
-            PlayPauseButton.Style = (Style)FindResource("WiltIconButton");
-        }
+        BigStartButton.Visibility = needsAttention ? Visibility.Visible : Visibility.Collapsed;
+        BigStartButton.Content = isInviting ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
+        BigStartButton.ToolTip = isInviting ? PendingPhaseLabel(pendingPhase) : "Resume";
 
-        SetPlayPausePulse(needsAttention);
+        PauseButton.Visibility = needsAttention ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private int PendingPhaseMinutes(Phase? pendingPhase)
@@ -403,37 +391,6 @@ public partial class OverlayWindow : Window
         Phase.Focus => "Start Focus",
         _ => "Start",
     };
-
-    private bool _isPulseActive;
-
-    private void SetPlayPausePulse(bool active)
-    {
-        if (active == _isPulseActive)
-        {
-            return;
-        }
-
-        _isPulseActive = active;
-
-        if (active)
-        {
-            var pulse = new DoubleAnimation(1.0, 1.14, TimeSpan.FromMilliseconds(650))
-            {
-                AutoReverse = true,
-                RepeatBehavior = RepeatBehavior.Forever,
-                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-            };
-            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleXProperty, pulse);
-            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleYProperty, pulse);
-        }
-        else
-        {
-            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            PlayPauseScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            PlayPauseScale.ScaleX = 1;
-            PlayPauseScale.ScaleY = 1;
-        }
-    }
 
     private static string FormatMinutes(int minutes) => FormatTime(minutes * 60.0);
 

@@ -52,7 +52,7 @@
                     <Button x:Name="SettingsButton" Content="⚙" Style="{StaticResource WiltIconButton}"
                             Click="OnSettingsClick" ToolTip="Settings" Margin="0,0,4,0" />
                     <Button x:Name="ClickThroughButton" Content="🔒" Style="{StaticResource WiltIconButton}"
-                            Click="OnClickThroughToggleClick" ToolTip="Enable click-through" Margin="0,0,4,0" />
+                            Click="OnClickThroughToggleClick" ToolTip="Toggle click-through" Margin="0,0,4,0" />
                     <Button x:Name="QuitButton" Content="⏻" Style="{StaticResource WiltIconButton}" Click="OnQuitClick"
                             ToolTip="Quit Wilt" />
                 </StackPanel>
@@ -60,35 +60,33 @@
 
             <!-- Character (draggable) with the session-progress ring beside it. Both
                  poses are always in the tree; only the selected one is visible/active
-                 (PRD-inspired "Could have": alternate poses, user-selectable in Settings). -->
+                 (PRD-inspired "Could have": alternate poses, user-selectable in Settings).
+                 The Start/Resume CTA sits directly over the character (not in the
+                 clock row) so it's the first thing you see whenever it needs a click -
+                 no animation needed to draw the eye when it's this obvious. -->
             <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
                         VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
-                <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
-                <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
-                                                Visibility="Collapsed" />
+                <Grid>
+                    <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
+                    <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
+                                                    Visibility="Collapsed" />
+                    <Button x:Name="BigStartButton" Content="▶ Start" Style="{StaticResource WiltPrimaryPillButton}"
+                            Click="OnPlayPauseClick" ToolTip="Start" HorizontalAlignment="Center"
+                            VerticalAlignment="Center" Visibility="Collapsed" />
+                </Grid>
                 <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" VerticalAlignment="Center"
                                         Margin="10,0,0,0" />
             </StackPanel>
 
-            <!-- Clock + primary controls, always reachable with a single click (PRD 9.1.1) -->
+            <!-- Clock + secondary controls, always reachable with a single click (PRD 9.1.1) -->
             <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,8,0,0"
                     HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="TimeText" Text="25:00" Foreground="{StaticResource WiltTextBrush}"
                                FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
                                VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
-
-                    <!-- Single play/pause button: a wide labeled accent pill ("Start
-                         Focus" / "Start Break" / "Resume") plus a gentle pulse whenever
-                         it needs a click - nothing times down until this is pressed
-                         (PRD-inspired: auto-start disabled, make the user notice) -
-                         collapsing to a plain icon while a session is actively running. -->
-                    <Button x:Name="PlayPauseButton" Content="▶ Start" Style="{StaticResource WiltPrimaryPillButton}"
-                            Click="OnPlayPauseClick" ToolTip="Start" RenderTransformOrigin="0.5,0.5">
-                        <Button.RenderTransform>
-                            <ScaleTransform x:Name="PlayPauseScale" ScaleX="1" ScaleY="1" />
-                        </Button.RenderTransform>
-                    </Button>
+                    <Button x:Name="PauseButton" Content="⏸" Style="{StaticResource WiltIconButton}"
+                            Click="OnPlayPauseClick" ToolTip="Pause" Visibility="Collapsed" />
                     <Button x:Name="FinishButton" Content="⏹" Style="{StaticResource WiltIconButton}"
                             Click="OnFinishClick" ToolTip="Finish session" Margin="4,0,0,0" Visibility="Collapsed" />
                 </StackPanel>
