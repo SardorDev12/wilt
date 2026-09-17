@@ -29,10 +29,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- SAPI-based speech synthesis for the end-of-session voice line;
-         ships as part of the Windows Desktop shared framework, referenced
-         by simple name rather than a NuGet package. -->
-    <Reference Include="System.Speech" />
+    <!-- SAPI-based speech synthesis for the end-of-session voice line.
+         A plain <Reference Include="System.Speech" /> relies on it already
+         being on the machine's framework reference list, which isn't
+         guaranteed - the NuGet package resolves reliably instead. -->
+    <PackageReference Include="System.Speech" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
