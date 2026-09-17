@@ -10,7 +10,7 @@
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight">
     <Border Style="{StaticResource WiltCapsuleBorder}" CornerRadius="15" Padding="4">
-        <Button Content="🔒" Style="{StaticResource WiltIconButton}"
+        <Button Content="🔓" Style="{StaticResource WiltIconButton}"
                 Click="OnDisableClick" ToolTip="Click to turn click-through off" />
     </Border>
 </Window>

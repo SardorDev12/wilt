@@ -85,6 +85,8 @@ public partial class OverlayWindow : Window
             ApplyClickThrough(settings.ClickThrough);
         }
 
+        ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
+        ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
         if (initialPlacement)
