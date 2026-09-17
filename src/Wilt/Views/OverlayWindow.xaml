@@ -42,11 +42,13 @@
                 </StackPanel>
             </Border>
 
-            <!-- Character, draggable. Its own progress halo/glow are built in. -->
-            <Grid x:Name="CharacterHost" HorizontalAlignment="Center"
-                  MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
-                <controls:CharacterControl x:Name="Character" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Grid>
+            <!-- Character (draggable) with the session-progress ring beside it -->
+            <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
+                        VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
+                <controls:CharacterControl x:Name="Character" VerticalAlignment="Center" />
+                <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" VerticalAlignment="Center"
+                                        Margin="10,0,0,0" />
+            </StackPanel>
 
             <!-- Clock + primary controls, always reachable with a single click (PRD 9.1.1) -->
             <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,8,0,0"

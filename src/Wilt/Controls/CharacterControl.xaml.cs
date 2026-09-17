@@ -30,21 +30,6 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
         nameof(WhimsyEmbellishments), typeof(bool), typeof(CharacterControl),
         new PropertyMetadata(false));
 
-    public static readonly DependencyProperty ProgressProperty = DependencyProperty.Register(
-        nameof(Progress), typeof(double), typeof(CharacterControl),
-        new PropertyMetadata(0.0, OnProgressChanged));
-
-    public double Progress
-    {
-        get => (double)GetValue(ProgressProperty);
-        set => SetValue(ProgressProperty, value);
-    }
-
-    private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        ((CharacterControl)d).HeadRing.Progress = (double)e.NewValue;
-    }
-
     public CharacterSkin Skin
     {
         get => (CharacterSkin)GetValue(SkinProperty);
@@ -107,7 +92,6 @@ public partial class CharacterControl : System.Windows.Controls.UserControl
 
         GlowStopInner.Color = Color.FromArgb(0x55, color.R, color.G, color.B);
         GlowStopOuter.Color = Color.FromArgb(0x00, color.R, color.G, color.B);
-        HeadRing.ProgressBrush = new SolidColorBrush(color);
     }
 
     /// <summary>Called every timer tick (~30fps) from the host window to drive the continuous base pose.</summary>

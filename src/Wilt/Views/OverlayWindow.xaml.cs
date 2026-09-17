@@ -278,7 +278,7 @@ public partial class OverlayWindow : Window
 
         // Ring shows *remaining* time depleting (PRD 9.1.1), so it starts full
         // and shrinks toward empty as the session progresses.
-        Character.Progress = _timerEngine.Phase == Phase.Inviting ? 0 : 1 - _timerEngine.Progress01;
+        Ring.Progress = _timerEngine.Phase == Phase.Inviting ? 0 : 1 - _timerEngine.Progress01;
 
         TimeText.Text = _timerEngine.Phase == Phase.Inviting
             ? FormatMinutes(_settingsService.Current.FocusMinutes)

@@ -1,7 +1,6 @@
 <UserControl x:Class="Wilt.Controls.CharacterControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Wilt.Controls"
              x:Name="Root"
              Width="150" Height="392" SnapsToDevicePixels="True">
     <Viewbox Stretch="Uniform">
@@ -19,11 +18,6 @@
                     <BlurEffect Radius="18" />
                 </Ellipse.Effect>
             </Ellipse>
-
-            <!-- Session progress halo, traced around the head (PRD 9.1.1's ring, adapted
-                 to a standing figure: circling the whole body would leave the ring
-                 mostly floating over empty space, so it reads instead as a halo). -->
-            <local:ProgressRing x:Name="HeadRing" Canvas.Left="30" Canvas.Top="20" Diameter="140" Thickness="4" />
 
             <!-- Ground shadow -->
             <Ellipse x:Name="GroundShadow" Canvas.Left="55" Canvas.Top="505" Width="90" Height="14" Fill="#40000000">
