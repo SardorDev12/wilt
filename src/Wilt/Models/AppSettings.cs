@@ -25,7 +25,7 @@ public class AppSettings
     public int LongBreakMinutes { get; set; } = 15;
     public int SessionsUntilLongBreak { get; set; } = 4;
 
-    public double OverlayScale { get; set; } = 1.0; // 0.55 (~80px) .. 2.0 (~300px), base 150px
+    public double OverlayScale { get; set; } = 1.0; // 0.2 .. 8.0, base ~150px tall at 1.0
     public double OverlayOpacity { get; set; } = 1.0; // 0.2 .. 1.0
     public bool ClickThrough { get; set; } = false;
     public bool SoundEnabled { get; set; } = true;

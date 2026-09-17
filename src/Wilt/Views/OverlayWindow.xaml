@@ -23,9 +23,18 @@
           an exact rendered pixel. This near-invisible background makes the
           whole widget rectangle hoverable.
         -->
-        <Grid.RenderTransform>
+        <!--
+          LayoutTransform, not RenderTransform: RenderTransform is purely
+          visual and doesn't participate in measure/arrange, so with
+          SizeToContent the window would size itself to the *unscaled*
+          content and clip anything the transform pushes past that - which
+          is exactly why the character got cut off above a certain size.
+          LayoutTransform is measured before the parent sizes itself, so the
+          window (and its click-through hit-test area) always grows to fit.
+        -->
+        <Grid.LayoutTransform>
             <ScaleTransform x:Name="OverlayScaleTransform" ScaleX="1" ScaleY="1" />
-        </Grid.RenderTransform>
+        </Grid.LayoutTransform>
 
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
 

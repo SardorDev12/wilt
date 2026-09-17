@@ -41,7 +41,7 @@
             <TextBlock Text="Overlay" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
 
             <TextBlock Text="Size" Margin="0,4,0,0" />
-            <Slider x:Name="OverlaySizeSlider" Minimum="0.55" Maximum="2.0" Value="1.0" TickFrequency="0.05"
+            <Slider x:Name="OverlaySizeSlider" Minimum="0.2" Maximum="8.0" Value="1.0" TickFrequency="0.1"
                     ValueChanged="OnOverlaySizeChanged" />
 
             <TextBlock Text="Opacity" Margin="0,8,0,0" />
