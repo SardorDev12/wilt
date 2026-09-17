@@ -68,10 +68,12 @@ MVP implementing the "Must have" scope from the PRD:
 - Always-on-screen character overlay (Inviting / Fresh / Focused / Tiring /
   Tired / Exhausted / Recovering / Reset / Paused states) driven by a
   continuous Energy value, with a randomized action-clip layer.
-- Start / Pause-Resume / Finish controls and a circular time-remaining halo
-  built into the overlay widget. Auto-start is disabled: when a session ends
-  on its own, the next phase begins paused, waiting for the user to resume
-  (Skip remains an explicit "move on now" action and does auto-continue).
+- A single play/pause control (plus Finish) and a circular time-remaining
+  halo built into the overlay widget. Auto-start is disabled: when a
+  session ends on its own, nothing times down until the user acts - the
+  widget goes back to idle with a pulsing, clearly labeled "Start Focus" /
+  "Start Break" button (Skip remains an explicit "move on now" action and
+  does auto-continue).
 - System tray icon with quick actions and a live tooltip.
 - Settings window (durations, sessions-until-long-break, overlay size,
   opacity, click-through, sound, launch-on-startup, character skin) that

@@ -303,27 +303,58 @@ public partial class OverlayWindow : Window
         var state = _timerEngine.GetEnergyState();
         _activeCharacter.ApplyState(_timerEngine.Energy, state);
 
+        var isInviting = _timerEngine.Phase == Phase.Inviting;
+        var pendingPhase = _timerEngine.PendingPhase;
+
         // Ring shows *remaining* time depleting (PRD 9.1.1), so it starts full
         // and shrinks toward empty as the session progresses.
-        Ring.Progress = _timerEngine.Phase == Phase.Inviting ? 0 : 1 - _timerEngine.Progress01;
+        Ring.Progress = isInviting ? 0 : 1 - _timerEngine.Progress01;
 
-        TimeText.Text = _timerEngine.Phase == Phase.Inviting
-            ? FormatMinutes(_settingsService.Current.FocusMinutes)
+        TimeText.Text = isInviting
+            ? FormatMinutes(PendingPhaseMinutes(pendingPhase))
             : FormatTime(_timerEngine.RemainingSeconds);
 
-        var isInviting = _timerEngine.Phase == Phase.Inviting;
         FinishButton.Visibility = isInviting ? Visibility.Collapsed : Visibility.Visible;
 
-        // Not running - whether never started or a session just ended and is
-        // waiting on the user (auto-start is disabled) - gets the filled
-        // accent pill plus a gentle pulse so it's impossible to miss.
-        // Actively running gets the plain, quiet pause icon.
+        // Not running - whether never started, a session just ended and is
+        // queued waiting on the user (auto-start is disabled - nothing times
+        // down until Start is pressed), or manually paused mid-session -
+        // gets a wide labeled accent pill plus a gentle pulse so it's
+        // impossible to miss. Actively running gets the plain, quiet pause icon.
         var needsAttention = _timerEngine.RunState != RunState.Running;
-        PlayPauseButton.Content = needsAttention ? "▶" : "⏸";
-        PlayPauseButton.ToolTip = needsAttention ? "Start" : "Pause";
-        PlayPauseButton.Style = (Style)FindResource(needsAttention ? "WiltPrimaryButton" : "WiltIconButton");
+        if (needsAttention)
+        {
+            PlayPauseButton.Content = isInviting ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
+            PlayPauseButton.ToolTip = isInviting ? PendingPhaseLabel(pendingPhase) : "Resume";
+            PlayPauseButton.Style = (Style)FindResource("WiltPrimaryPillButton");
+        }
+        else
+        {
+            PlayPauseButton.Content = "⏸";
+            PlayPauseButton.ToolTip = "Pause";
+            PlayPauseButton.Style = (Style)FindResource("WiltIconButton");
+        }
+
         SetPlayPausePulse(needsAttention);
     }
+
+    private int PendingPhaseMinutes(Phase? pendingPhase)
+    {
+        var settings = _settingsService.Current;
+        return pendingPhase switch
+        {
+            Phase.ShortBreak => settings.ShortBreakMinutes,
+            Phase.LongBreak => settings.LongBreakMinutes,
+            _ => settings.FocusMinutes,
+        };
+    }
+
+    private static string PendingPhaseLabel(Phase? pendingPhase) => pendingPhase switch
+    {
+        Phase.ShortBreak or Phase.LongBreak => "Start Break",
+        Phase.Focus => "Start Focus",
+        _ => "Start",
+    };
 
     private bool _isPulseActive;
 

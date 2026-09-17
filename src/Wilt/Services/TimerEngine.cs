@@ -18,6 +18,15 @@ public class TimerEngine
     public Phase Phase { get; private set; } = Phase.Inviting;
     public RunState RunState { get; private set; } = RunState.Idle;
 
+    /// <summary>
+    /// While Phase is Inviting, the phase a click on Start would actually
+    /// begin - null means a fresh Focus session, non-null means a
+    /// previous phase just finished naturally and is waiting on the user
+    /// (auto-start is disabled, PRD-inspired: nothing begins without an
+    /// explicit action).
+    /// </summary>
+    public Phase? PendingPhase { get; private set; }
+
     /// <summary>Total duration of the current phase, in seconds.</summary>
     public double PhaseDurationSeconds { get; private set; }
 
@@ -67,7 +76,8 @@ public class TimerEngine
     {
         if (Phase == Phase.Inviting)
         {
-            BeginPhase(Phase.Focus);
+            BeginPhase(PendingPhase ?? Phase.Focus);
+            PendingPhase = null;
         }
 
         RunState = RunState.Running;
@@ -109,6 +119,7 @@ public class TimerEngine
         PhaseCompleted?.Invoke(this, completed);
 
         Phase = Phase.Inviting;
+        PendingPhase = null;
         RunState = RunState.Idle;
         ElapsedSeconds = 0;
         PhaseDurationSeconds = 0;
@@ -173,12 +184,11 @@ public class TimerEngine
     /// <summary>
     /// Advances from the current phase to the next one in rotation (Focus ->
     /// break -> Focus...), used by natural tick-based completion and by
-    /// Skip. The next phase always begins at full duration/reset Energy;
-    /// <paramref name="autoContinue"/> controls whether it starts running
-    /// immediately (Skip's explicit "move on now") or waits paused for the
-    /// user to press Start/Resume (natural completion - auto-start is
-    /// disabled so a finished session doesn't silently roll into the next
-    /// one unattended).
+    /// Skip. <paramref name="autoContinue"/> controls whether the next
+    /// phase actually begins running (Skip's explicit "move on now") or is
+    /// only queued as <see cref="PendingPhase"/> while Phase goes back to
+    /// Inviting (natural completion - auto-start is disabled, so nothing
+    /// times down until the user presses Start for the queued phase).
     /// </summary>
     private void AdvanceToNextPhase(bool autoContinue)
     {
@@ -186,10 +196,11 @@ public class TimerEngine
         _timer.Stop();
         PhaseCompleted?.Invoke(this, completed);
 
+        Phase nextPhase;
         if (completed == Phase.Focus)
         {
             _sessionsCompletedSinceLongBreak++;
-            var nextPhase = _sessionsCompletedSinceLongBreak >= _settings.SessionsUntilLongBreak
+            nextPhase = _sessionsCompletedSinceLongBreak >= _settings.SessionsUntilLongBreak
                 ? Phase.LongBreak
                 : Phase.ShortBreak;
 
@@ -197,19 +208,32 @@ public class TimerEngine
             {
                 _sessionsCompletedSinceLongBreak = 0;
             }
-
-            BeginPhase(nextPhase);
         }
         else
         {
-            BeginPhase(Phase.Focus);
+            nextPhase = Phase.Focus;
         }
 
-        RunState = autoContinue ? RunState.Running : RunState.Paused;
+        if (autoContinue)
+        {
+            BeginPhase(nextPhase);
+            RunState = RunState.Running;
+        }
+        else
+        {
+            PendingPhase = nextPhase;
+            Phase = Phase.Inviting;
+            ElapsedSeconds = 0;
+            PhaseDurationSeconds = 0;
+            Energy = 100;
+            RunState = RunState.Idle;
+            PhaseStarted?.Invoke(this, Phase.Inviting);
+        }
 
-        // Keep the tick loop running even when paused: OnTick's RunState
-        // guard is what actually holds time/Energy still, but Tick must
-        // keep firing so the UI (clock, ring, character) keeps refreshing.
+        // Keep the tick loop running even while idle/paused: OnTick's
+        // RunState guard is what actually holds time/Energy still, but Tick
+        // must keep firing so the UI (clock, ring, character) keeps
+        // refreshing and the character's idle/paused action clips still play.
         _timer.Start();
     }
 

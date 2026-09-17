@@ -62,11 +62,12 @@
                                FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
                                VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
 
-                    <!-- Single play/pause button: filled accent pill + a gentle pulse
-                         whenever it needs a click (not started, or a session just ended
-                         and is waiting to resume - PRD-inspired "make the user notice"),
-                         plain style while a session is actively running. -->
-                    <Button x:Name="PlayPauseButton" Content="▶" Style="{StaticResource WiltPrimaryButton}"
+                    <!-- Single play/pause button: a wide labeled accent pill ("Start
+                         Focus" / "Start Break" / "Resume") plus a gentle pulse whenever
+                         it needs a click - nothing times down until this is pressed
+                         (PRD-inspired: auto-start disabled, make the user notice) -
+                         collapsing to a plain icon while a session is actively running. -->
+                    <Button x:Name="PlayPauseButton" Content="▶ Start" Style="{StaticResource WiltPrimaryPillButton}"
                             Click="OnPlayPauseClick" ToolTip="Start" RenderTransformOrigin="0.5,0.5">
                         <Button.RenderTransform>
                             <ScaleTransform x:Name="PlayPauseScale" ScaleX="1" ScaleY="1" />
