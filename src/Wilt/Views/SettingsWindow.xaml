@@ -79,6 +79,17 @@
 
             <Separator Margin="0,12" />
 
+            <TextBlock Text="Idle detection" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
+            <CheckBox x:Name="IdleDetectionCheckBox"
+                      Content="Auto-pause when there's no keyboard/mouse activity"
+                      Checked="OnBehaviorChanged" Unchecked="OnBehaviorChanged" />
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="After (minutes)" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox x:Name="IdleTimeoutMinutesBox" Width="50" TextChanged="OnIdleTimeoutChanged" />
+            </StackPanel>
+
+            <Separator Margin="0,12" />
+
             <TextBlock Text="Stats (local only)" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
             <TextBlock x:Name="StatsText" Text="Focus sessions — today: 0, this week: 0, all time: 0" TextWrapping="Wrap" />
 

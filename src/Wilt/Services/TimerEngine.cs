@@ -36,6 +36,9 @@ public class TimerEngine
     /// <summary>0-100. 100 = fully rested. Decays during Focus, recovers during breaks.</summary>
     public double Energy { get; private set; } = 100;
 
+    /// <summary>Completed focus sessions since the last long break (resets to 0 after one), for a "2/4" style progress readout.</summary>
+    public int SessionsCompletedSinceLongBreak => _sessionsCompletedSinceLongBreak;
+
     public event EventHandler? Tick;
     public event EventHandler<Phase>? PhaseCompleted;
     public event EventHandler<Phase>? PhaseStarted;

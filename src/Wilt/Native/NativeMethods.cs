@@ -45,4 +45,33 @@ internal static class NativeMethods
             SetWindowLong(hwnd, GWL_EXSTYLE, newStyle);
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LASTINPUTINFO
+    {
+        public uint cbSize;
+        public uint dwTime;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+    /// <summary>
+    /// Time since the last system-wide keyboard or mouse input, regardless
+    /// of which window (if any) has focus - used for idle/AFK auto-pause.
+    /// </summary>
+    public static TimeSpan GetIdleTime()
+    {
+        var lii = new LASTINPUTINFO();
+        lii.cbSize = (uint)Marshal.SizeOf(lii);
+        if (!GetLastInputInfo(ref lii))
+        {
+            return TimeSpan.Zero;
+        }
+
+        // Unsigned subtraction so this still works correctly across the ~49.7
+        // day tick-count wraparound.
+        var idleMs = unchecked((uint)Environment.TickCount - lii.dwTime);
+        return TimeSpan.FromMilliseconds(idleMs);
+    }
 }

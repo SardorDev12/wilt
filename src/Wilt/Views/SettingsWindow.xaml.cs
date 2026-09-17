@@ -45,6 +45,8 @@ public partial class SettingsWindow : Window
         SoundEnabledCheckBox.IsChecked = s.SoundEnabled;
         LaunchOnStartupCheckBox.IsChecked = s.LaunchOnStartup;
         GlobalHotkeysCheckBox.IsChecked = s.GlobalHotkeysEnabled;
+        IdleDetectionCheckBox.IsChecked = s.IdleDetectionEnabled;
+        IdleTimeoutMinutesBox.Text = s.IdleTimeoutMinutes.ToString();
 
         foreach (ComboBoxItem item in SkinComboBox.Items)
         {
@@ -162,6 +164,19 @@ public partial class SettingsWindow : Window
         s.WhimsyEmbellishments = WhimsyCheckBox.IsChecked == true;
         s.SoundEnabled = SoundEnabledCheckBox.IsChecked == true;
         s.GlobalHotkeysEnabled = GlobalHotkeysCheckBox.IsChecked == true;
+        s.IdleDetectionEnabled = IdleDetectionCheckBox.IsChecked == true;
+        _settingsService.Save(s);
+    }
+
+    private void OnIdleTimeoutChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInitializing || !TryParsePositiveInt(IdleTimeoutMinutesBox.Text, out var minutes))
+        {
+            return;
+        }
+
+        var s = CurrentDraft();
+        s.IdleTimeoutMinutes = minutes;
         _settingsService.Save(s);
     }
 

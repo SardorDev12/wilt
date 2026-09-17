@@ -74,8 +74,13 @@
                             Click="OnPlayPauseClick" ToolTip="Start" HorizontalAlignment="Center"
                             VerticalAlignment="Center" Visibility="Collapsed" />
                 </Grid>
-                <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" VerticalAlignment="Center"
-                                        Margin="10,0,0,0" />
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" HorizontalAlignment="Center" />
+                    <!-- Progress toward the next long break, e.g. "2/4" -->
+                    <TextBlock x:Name="SessionsCounterText" Text="0/4" Foreground="{StaticResource WiltTextDimBrush}"
+                               FontSize="11" HorizontalAlignment="Center" Margin="0,3,0,0"
+                               ToolTip="Focus sessions completed toward the next long break" />
+                </StackPanel>
             </StackPanel>
 
             <!-- Clock + secondary controls, always reachable with a single click (PRD 9.1.1) -->

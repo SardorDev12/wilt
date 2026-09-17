@@ -357,6 +357,8 @@ public partial class OverlayWindow : Window
         // and shrinks toward empty as the session progresses.
         Ring.Progress = isInviting ? 0 : 1 - _timerEngine.Progress01;
 
+        SessionsCounterText.Text = $"{_timerEngine.SessionsCompletedSinceLongBreak}/{_settingsService.Current.SessionsUntilLongBreak}";
+
         TimeText.Text = isInviting
             ? FormatMinutes(PendingPhaseMinutes(pendingPhase))
             : FormatTime(_timerEngine.RemainingSeconds);

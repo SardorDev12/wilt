@@ -43,6 +43,10 @@ public class AppSettings
     public string GlobalHotkeySkip { get; set; } = "Ctrl+Alt+S";
     public bool GlobalHotkeysEnabled { get; set; } = true;
 
+    /// <summary>Auto-pause a running session after no keyboard/mouse input system-wide for IdleTimeoutMinutes.</summary>
+    public bool IdleDetectionEnabled { get; set; } = true;
+    public int IdleTimeoutMinutes { get; set; } = 5;
+
     public AppSettings Clone()
     {
         return (AppSettings)MemberwiseClone();

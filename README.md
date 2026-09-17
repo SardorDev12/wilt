@@ -84,3 +84,6 @@ MVP implementing the "Must have" scope from the PRD:
 - Local JSON-based settings + session history persistence, no network calls.
 - Should-have extras: local stats panel, multiple skins, per-monitor
   position memory, global hotkeys for start/pause/skip.
+- Could-have extras: idle/AFK auto-pause (checks system-wide keyboard/mouse
+  input via GetLastInputInfo, configurable timeout), and a "2/4" sessions-
+  completed-toward-next-long-break counter next to the progress ring.

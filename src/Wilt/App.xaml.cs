@@ -11,6 +11,7 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private TrayIconService? _trayIconService;
     private HotkeyService? _hotkeyService;
+    private IdleDetectionService? _idleDetectionService;
     private OverlayWindow? _overlayWindow;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -41,7 +42,18 @@ public partial class App : Application
         _hotkeyService = new HotkeyService(_overlayWindow, timerEngine);
         _hotkeyService.Initialize(settings);
 
-        settingsService.SettingsChanged += (_, s) => _hotkeyService.UpdateBindings(s);
+        _idleDetectionService = new IdleDetectionService(timerEngine)
+        {
+            Enabled = settings.IdleDetectionEnabled,
+            Timeout = TimeSpan.FromMinutes(settings.IdleTimeoutMinutes),
+        };
+
+        settingsService.SettingsChanged += (_, s) =>
+        {
+            _hotkeyService.UpdateBindings(s);
+            _idleDetectionService.Enabled = s.IdleDetectionEnabled;
+            _idleDetectionService.Timeout = TimeSpan.FromMinutes(s.IdleTimeoutMinutes);
+        };
 
         StartupService.Apply(settings.LaunchOnStartup);
     }
