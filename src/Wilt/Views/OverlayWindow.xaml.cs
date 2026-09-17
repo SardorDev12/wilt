@@ -363,7 +363,11 @@ public partial class OverlayWindow : Window
             ? FormatMinutes(PendingPhaseMinutes(pendingPhase))
             : FormatTime(_timerEngine.RemainingSeconds);
 
-        FinishButton.Visibility = isInviting ? Visibility.Collapsed : Visibility.Visible;
+        // While click-through is on, this window can't be clicked at all (see
+        // the click-through section below) - showing Finish/Pause as if they
+        // were still usable would be misleading, so hide them entirely.
+        var clickThrough = _settingsService.Current.ClickThrough;
+        FinishButton.Visibility = !clickThrough && !isInviting ? Visibility.Visible : Visibility.Collapsed;
 
         // Not running - whether never started, a session just ended and is
         // queued waiting on the user (auto-start is disabled - nothing times
@@ -375,7 +379,7 @@ public partial class OverlayWindow : Window
         BigStartButton.Content = isInviting ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
         BigStartButton.ToolTip = isInviting ? PendingPhaseLabel(pendingPhase) : "Resume";
 
-        PauseButton.Visibility = needsAttention ? Visibility.Collapsed : Visibility.Visible;
+        PauseButton.Visibility = !clickThrough && !needsAttention ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private int PendingPhaseMinutes(Phase? pendingPhase)
