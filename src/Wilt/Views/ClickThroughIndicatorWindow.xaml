@@ -9,8 +9,7 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight">
-    <Border Style="{StaticResource WiltCapsuleBorder}" CornerRadius="15" Padding="4">
-        <Button Content="🔓" Style="{StaticResource WiltIconButton}"
-                Click="OnDisableClick" ToolTip="Click to turn click-through off" />
-    </Border>
+    <!-- Bare icon, no pill/border chrome - just the button itself. -->
+    <Button Content="🔓" Style="{StaticResource WiltIconButton}"
+            Click="OnDisableClick" ToolTip="Click to turn click-through off" />
 </Window>

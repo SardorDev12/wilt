@@ -61,7 +61,7 @@
          something off, so it reads as a real call-to-action. -->
     <Style x:Key="WiltPrimaryPillButton" TargetType="Button">
         <Setter Property="Height" Value="30" />
-        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Padding" Value="20,0" />
         <Setter Property="Foreground" Value="{StaticResource WiltTextBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -71,7 +71,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bg" Background="{StaticResource WiltAccentBrush}" CornerRadius="15">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">

@@ -53,30 +53,7 @@ public class TrayIconService : IDisposable
 
         _timerEngine.Tick += (_, _) => UpdateTooltipAndMenu();
         _timerEngine.PhaseStarted += (_, _) => UpdateTooltipAndMenu();
-        _timerEngine.PhaseCompleted += (_, phase) => ShowCompletionToast(phase);
         UpdateTooltipAndMenu();
-    }
-
-    /// <summary>
-    /// Native Windows notification when a session ends, so it's still
-    /// noticeable even if the overlay is out of view or behind other
-    /// windows - a second channel alongside the voice/chime in SoundService.
-    /// </summary>
-    private void ShowCompletionToast(Phase completedPhase)
-    {
-        if (_notifyIcon == null)
-        {
-            return;
-        }
-
-        var (title, text) = completedPhase == Phase.Focus
-            ? ("Focus session complete", "Time for a break.")
-            : ("Break's over", "Ready to focus?");
-
-        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
-        _notifyIcon.BalloonTipTitle = title;
-        _notifyIcon.BalloonTipText = text;
-        _notifyIcon.ShowBalloonTip(4000);
     }
 
     private void OpenSettings()
