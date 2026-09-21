@@ -6,10 +6,12 @@ using Wilt.Native;
 namespace Wilt.Services;
 
 /// <summary>
-/// Auto-pauses a running session after no system-wide keyboard or mouse
-/// input for a configurable timeout (PRD 8, "Could have": idle detection),
-/// and auto-resumes once input comes back - but only for a pause *this*
-/// service caused, never overriding a pause the user made themselves.
+/// Auto-pauses a running Focus session (not breaks - being away from the
+/// keyboard/mouse during a break is expected) after no system-wide
+/// keyboard or mouse input for a configurable timeout (PRD 8, "Could
+/// have": idle detection), and auto-resumes once input comes back - but
+/// only for a pause *this* service caused, never overriding a pause the
+/// user made themselves.
 /// </summary>
 public class IdleDetectionService
 {
@@ -39,9 +41,13 @@ public class IdleDetectionService
         }
 
         var idle = NativeMethods.GetIdleTime();
-        var isActiveSession = _timerEngine.Phase != Phase.Inviting;
 
-        if (!isActiveSession)
+        // Focus only: being away from the keyboard/mouse during a break is
+        // expected (that's the point of the break), so idle detection
+        // shouldn't stall it out.
+        var isActiveFocusSession = _timerEngine.Phase == Phase.Focus;
+
+        if (!isActiveFocusSession)
         {
             _pausedByIdle = false;
             return;
