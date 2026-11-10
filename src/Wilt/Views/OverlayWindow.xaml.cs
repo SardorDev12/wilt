@@ -36,6 +36,15 @@ public partial class OverlayWindow : Window
     private ClickThroughIndicatorWindow? _clickThroughIndicator;
     private bool _missedPanelOpen;
 
+    // The currently-running task's row label, updated every tick (see
+    // UpdateTaskClock) instead of waiting for the next full RenderTasks() -
+    // TasksChanged only fires on explicit actions (start/pause/add/...), not
+    // once a second, so the row's "worked/planned" minutes otherwise never
+    // advanced while a task was actively running.
+    private TextBlock? _activeTaskRowText;
+    private WorkTask? _activeTaskRowTask;
+    private int _activeTaskRowNumber;
+
     public OverlayWindow(TimerEngine timerEngine, SettingsService settingsService, HistoryService historyService,
         TaskEngine taskEngine)
     {
@@ -504,6 +513,9 @@ public partial class OverlayWindow : Window
         CloseAddTaskForm();
     }
 
+    private static string FormatTaskLabel(WorkTask task, int number) =>
+        $"{number}. {task.Name} — {(int)(task.WorkedSeconds / 60)}/{task.PlannedMinutes}";
+
     private void UpdateTaskClock()
     {
         var active = _taskEngine.ActiveTask;
@@ -511,10 +523,22 @@ public partial class OverlayWindow : Window
         TaskPauseButton.Content = BuildPlayPauseIcon(_taskEngine.IsActiveRunning);
         TaskPauseButton.ToolTip = _taskEngine.IsActiveRunning ? "Pause" : "Start";
         TaskPauseButton.IsEnabled = active != null;
+
+        // The row list itself only rebuilds on TasksChanged (an explicit
+        // action), not once a second, so the active row's own "worked/
+        // planned" label is refreshed here instead - otherwise it looked
+        // frozen while a task was actively running.
+        if (_activeTaskRowText != null && _activeTaskRowTask != null && _taskEngine.ActiveTaskId == _activeTaskRowTask.Id)
+        {
+            _activeTaskRowText.Text = FormatTaskLabel(_activeTaskRowTask, _activeTaskRowNumber);
+        }
     }
 
     private void RenderTasks()
     {
+        _activeTaskRowText = null;
+        _activeTaskRowTask = null;
+
         UpdateTaskClock();
 
         var today = _taskEngine.TodayTasks;
@@ -554,7 +578,7 @@ public partial class OverlayWindow : Window
 
         var nameText = new TextBlock
         {
-            Text = $"{number}. {task.Name} — {(int)(task.WorkedSeconds / 60)}/{task.PlannedMinutes}",
+            Text = FormatTaskLabel(task, number),
             Foreground = textBrush,
             FontSize = 12,
             FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal,
@@ -564,6 +588,13 @@ public partial class OverlayWindow : Window
         if (task.IsDone)
         {
             nameText.TextDecorations = TextDecorations.Strikethrough;
+        }
+
+        if (isActive)
+        {
+            _activeTaskRowText = nameText;
+            _activeTaskRowTask = task;
+            _activeTaskRowNumber = number;
         }
 
         Grid.SetColumn(nameText, 0);
