@@ -10,6 +10,8 @@ using Wilt.Models;
 using Wilt.Native;
 using Wilt.Services;
 using Application = System.Windows.Application;
+using Button = System.Windows.Controls.Button;
+using CheckBox = System.Windows.Controls.CheckBox;
 using MessageBox = System.Windows.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
