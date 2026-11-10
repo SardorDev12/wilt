@@ -96,21 +96,13 @@ public partial class OverlayWindow : Window
             ApplyClickThrough(settings.ClickThrough);
         }
 
+        // Only the lock glyph itself changes with click-through state - every
+        // other button keeps its place and its normal appearance.
         ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
         ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
         TaskClickThroughButton.Content = ClickThroughButton.Content;
         TaskClickThroughButton.ToolTip = ClickThroughButton.ToolTip;
         SetClickThroughIndicatorVisible(settings.ClickThrough);
-
-        // Once click-through is on, none of these are actually clickable (the
-        // whole window stops receiving mouse input) - dim them to show that,
-        // same spirit as hiding Finish/Pause in Pomodoro mode. The toggle
-        // itself stays full-opacity as the one visible indicator of state.
-        var inertOpacity = settings.ClickThrough ? 0.35 : 1.0;
-        TaskNextButton.Opacity = inertOpacity;
-        TaskPauseButton.Opacity = inertOpacity;
-        TaskSettingsButton.Opacity = inertOpacity;
-        TaskCloseButton.Opacity = inertOpacity;
 
         SwitchViewMode(settings.ViewMode);
 
