@@ -176,12 +176,35 @@
                                        FontWeight="SemiBold" />
                         </Border>
 
-                        <StackPanel x:Name="AddTaskForm" Orientation="Horizontal" Margin="2,8,0,0"
+                        <StackPanel x:Name="AddTaskForm" Orientation="Vertical" Margin="2,8,0,0"
                                     Visibility="Collapsed" MouseLeftButtonDown="OnInteractiveRowMouseLeftButtonDown">
-                            <TextBox x:Name="NewTaskNameBox" Width="130" Margin="0,0,6,0" />
-                            <TextBox x:Name="NewTaskMinutesBox" Width="42" Margin="0,0,6,0" ToolTip="Planned minutes" />
-                            <Button Content="Add" Style="{StaticResource WiltIconButton}" Width="44"
-                                    Click="OnConfirmAddTaskClick" />
+                            <TextBlock Text="Task name" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
+                                       Margin="2,0,0,3" />
+                            <TextBox x:Name="NewTaskNameBox" Style="{StaticResource WiltTextBox}"
+                                     KeyDown="OnAddTaskFieldKeyDown" />
+
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Bottom">
+                                    <TextBlock Text="Minutes" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
+                                               Margin="2,0,0,3" />
+                                    <TextBox x:Name="NewTaskMinutesBox" Style="{StaticResource WiltTextBox}"
+                                             ToolTip="Planned minutes" KeyDown="OnAddTaskFieldKeyDown" />
+                                </StackPanel>
+
+                                <Button Grid.Column="2" Content="Cancel" Style="{StaticResource WiltIconButton}"
+                                        Width="56" VerticalAlignment="Bottom" Margin="8,0,6,0"
+                                        Click="OnCancelAddTaskClick" />
+                                <Button Grid.Column="3" Content="Add" Style="{StaticResource WiltPrimaryPillButton}"
+                                        Height="26" Padding="14,0" VerticalAlignment="Bottom"
+                                        Click="OnConfirmAddTaskClick" />
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Border>

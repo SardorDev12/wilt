@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using Wilt.Controls;
 using Wilt.Models;
 using Wilt.Native;
@@ -45,6 +46,11 @@ public partial class OverlayWindow : Window
 
         _activeCharacter = StandingCharacter;
         _activeCharacter.SetActive(true);
+
+        // Always shows the pause bars (it's only ever visible while a phase
+        // is actively running - see UpdateVisualState), so it's set once here
+        // rather than toggled per-tick like TaskPauseButton.
+        PauseButton.Content = BuildPlayPauseIcon(showPause: true);
 
         SourceInitialized += OnSourceInitialized;
         Loaded += (_, _) => ApplySettings(_settingsService.Current, initialPlacement: true);
@@ -97,10 +103,14 @@ public partial class OverlayWindow : Window
         }
 
         // Only the lock glyph itself changes with click-through state - every
-        // other button keeps its place and its normal appearance.
-        ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
+        // other button keeps its place and its normal appearance. Drawn as a
+        // small vector icon rather than an emoji character: the lock/unlock
+        // and pause/play glyphs (U+1F512/1F513, U+23F8) render inconsistently
+        // across Windows emoji font versions, which is what made the lock
+        // icon appear to "duplicate" into the pause button's slot.
+        ClickThroughButton.Content = BuildLockIcon(settings.ClickThrough);
         ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
-        TaskClickThroughButton.Content = ClickThroughButton.Content;
+        TaskClickThroughButton.Content = BuildLockIcon(settings.ClickThrough);
         TaskClickThroughButton.ToolTip = ClickThroughButton.ToolTip;
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
@@ -412,6 +422,22 @@ public partial class OverlayWindow : Window
     {
         AddTaskForm.Visibility = Visibility.Collapsed;
         AddTaskRow.Visibility = Visibility.Visible;
+        NewTaskNameBox.Text = "";
+        NewTaskMinutesBox.Text = "";
+    }
+
+    private void OnCancelAddTaskClick(object sender, RoutedEventArgs e) => CloseAddTaskForm();
+
+    private void OnAddTaskFieldKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            OnConfirmAddTaskClick(sender, e);
+        }
+        else if (e.Key == Key.Escape)
+        {
+            CloseAddTaskForm();
+        }
     }
 
     private void OnRootPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -436,9 +462,6 @@ public partial class OverlayWindow : Window
         }
 
         _taskEngine.AddTask(name, minutes);
-
-        NewTaskNameBox.Text = "";
-        NewTaskMinutesBox.Text = "";
         CloseAddTaskForm();
     }
 
@@ -446,7 +469,7 @@ public partial class OverlayWindow : Window
     {
         var active = _taskEngine.ActiveTask;
         TaskClockText.Text = active != null ? FormatTime(active.WorkedSeconds) : "00:00";
-        TaskPauseButton.Content = _taskEngine.IsActiveRunning ? "⏸" : "▶";
+        TaskPauseButton.Content = BuildPlayPauseIcon(_taskEngine.IsActiveRunning);
         TaskPauseButton.ToolTip = _taskEngine.IsActiveRunning ? "Pause" : "Start";
         TaskPauseButton.IsEnabled = active != null;
     }
@@ -716,6 +739,58 @@ public partial class OverlayWindow : Window
     {
         var ts = TimeSpan.FromSeconds(Math.Max(0, totalSeconds));
         return $"{(int)ts.TotalMinutes:00}:{ts.Seconds:00}";
+    }
+
+    // ----- Small vector icons -----
+    //
+    // Hand-drawn instead of emoji characters (▶/⏸, 🔒/🔓): those specific
+    // codepoints render inconsistently across Windows' installed emoji font
+    // version, which is what made the lock icon appear to show up a second
+    // time in the pause button's slot. A Path/Rectangle built from plain
+    // lines renders identically everywhere. Each call returns a fresh
+    // element - a UIElement can only ever be the content of one Button.
+
+    private static UIElement BuildPlayPauseIcon(bool showPause)
+    {
+        var geometry = Geometry.Parse(showPause
+            ? "M0,0 H3 V12 H0 Z M7,0 H10 V12 H7 Z" // two bars
+            : "M0,0 L10,6 L0,12 Z"); // triangle
+        var path = new Path
+        {
+            Data = geometry,
+            Fill = (Brush)Application.Current.Resources["WiltTextBrush"],
+        };
+        return new Viewbox { Width = 11, Height = 12, Child = path };
+    }
+
+    private static UIElement BuildLockIcon(bool unlocked)
+    {
+        var textBrush = (Brush)Application.Current.Resources["WiltTextBrush"];
+
+        // Shackle: a simple flat bracket, drawn as a "U" open at the bottom
+        // of the right leg when unlocked instead of meeting the body.
+        var shackle = new Path
+        {
+            Data = Geometry.Parse(unlocked ? "M2,5 V3 H8 V4.5" : "M2,5 V3 H8 V5"),
+            Stroke = textBrush,
+            StrokeThickness = 1.4,
+        };
+        var body = new Rectangle
+        {
+            Width = 8,
+            Height = 6,
+            RadiusX = 1,
+            RadiusY = 1,
+            Fill = textBrush,
+        };
+        Canvas.SetLeft(body, 2);
+        Canvas.SetTop(body, 5);
+
+        var canvas = new Canvas { Width = 12, Height = 12 };
+        canvas.Children.Add(shackle);
+        canvas.Children.Add(body);
+
+        return new Viewbox { Width = 12, Height = 12, Child = canvas };
     }
 }
 
