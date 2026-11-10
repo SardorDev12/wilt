@@ -766,32 +766,25 @@ public partial class OverlayWindow : Window
 
     private static UIElement BuildLockIcon(bool unlocked)
     {
-        var textBrush = (Brush)Application.Current.Resources["WiltTextBrush"];
+        // A single filled Path, same proven approach as BuildPlayPauseIcon -
+        // the previous version's shackle was a Stroke-only Path, which never
+        // actually rendered, leaving just the body rectangle (reading as a
+        // plain floppy-disk-like square that looked identical either way).
+        // Left leg + top bar stay fixed; only the right leg moves - down to
+        // meet the body when locked, lifted clear of it when unlocked.
+        var rightLeg = unlocked ? "M7.8,0.5 H9 V3.7 H7.8 Z" : "M7.8,2 H9 V5.5 H7.8 Z";
+        var data =
+            "M3,2 H4.2 V5.5 H3 Z " +   // left leg of the shackle
+            "M3,2 H9 V3.2 H3 Z " +     // top bar of the shackle
+            rightLeg +                 // right leg - the part that moves
+            "M2,5 H10 V11 H2 Z";       // body
 
-        // Shackle: a simple flat bracket, drawn as a "U" open at the bottom
-        // of the right leg when unlocked instead of meeting the body.
-        var shackle = new Path
+        var path = new Path
         {
-            Data = Geometry.Parse(unlocked ? "M2,5 V3 H8 V4.5" : "M2,5 V3 H8 V5"),
-            Stroke = textBrush,
-            StrokeThickness = 1.4,
+            Data = Geometry.Parse(data),
+            Fill = (Brush)Application.Current.Resources["WiltTextBrush"],
         };
-        var body = new Rectangle
-        {
-            Width = 8,
-            Height = 6,
-            RadiusX = 1,
-            RadiusY = 1,
-            Fill = textBrush,
-        };
-        Canvas.SetLeft(body, 2);
-        Canvas.SetTop(body, 5);
-
-        var canvas = new Canvas { Width = 12, Height = 12 };
-        canvas.Children.Add(shackle);
-        canvas.Children.Add(body);
-
-        return new Viewbox { Width = 12, Height = 12, Child = canvas };
+        return new Viewbox { Width = 12, Height = 12, Child = path };
     }
 }
 
