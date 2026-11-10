@@ -285,8 +285,12 @@ public partial class OverlayWindow : Window
     }
 
     // ----- Dragging (PRD 9.1) -----
+    //
+    // Shared by the Pomodoro character and, since there's no character to
+    // grab in Task Mode, the Task Mode top bar and task-list capsule -
+    // whichever empty (non-button) area the user clicks.
 
-    private void OnCharacterMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void OnDragHandleMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 1)
         {
@@ -440,7 +444,7 @@ public partial class OverlayWindow : Window
 
     private UIElement BuildTaskRow(WorkTask task, int number)
     {
-        var grid = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+        var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -513,12 +517,19 @@ public partial class OverlayWindow : Window
         Grid.SetColumn(doneCheck, 4);
         grid.Children.Add(doneCheck);
 
-        return grid;
+        return new Border
+        {
+            Background = (Brush)FindResource(isActive ? "WiltAccentDimBrush" : "WiltRowChipBrush"),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(8, 6, 6, 6),
+            Margin = new Thickness(0, 0, 0, 6),
+            Child = grid,
+        };
     }
 
     private UIElement BuildMissedRow(WorkTask task)
     {
-        var grid = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+        var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -556,7 +567,14 @@ public partial class OverlayWindow : Window
         Grid.SetColumn(dismissButton, 2);
         grid.Children.Add(dismissButton);
 
-        return grid;
+        return new Border
+        {
+            Background = (Brush)FindResource("WiltRowChipBrush"),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(8, 6, 6, 6),
+            Margin = new Thickness(0, 0, 0, 6),
+            Child = grid,
+        };
     }
 
     // ----- Visual state sync -----

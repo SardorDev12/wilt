@@ -12,10 +12,14 @@
          clock/controls capsule so the whole widget reads as one cohesive
          material rather than flat boxes. -->
     <LinearGradientBrush x:Key="WiltCapsuleBgBrush" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#E4232329" Offset="0" />
-        <GradientStop Color="#EE17171B" Offset="1" />
+        <GradientStop Color="#F2232329" Offset="0" />
+        <GradientStop Color="#FA17171B" Offset="1" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="WiltCapsuleBorderBrush" Color="#22FFFFFF" />
+    <SolidColorBrush x:Key="WiltCapsuleBorderBrush" Color="#40FFFFFF" />
+
+    <!-- Subtle per-row "chip" fill for Task Mode list rows, so each task reads
+         as its own card against the dark capsule instead of floating text. -->
+    <SolidColorBrush x:Key="WiltRowChipBrush" Color="#18FFFFFF" />
 
     <Style x:Key="WiltCapsuleBorder" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource WiltCapsuleBgBrush}" />

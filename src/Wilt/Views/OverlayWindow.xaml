@@ -66,7 +66,7 @@
                      clock row) so it's the first thing you see whenever it needs a click -
                      no animation needed to draw the eye when it's this obvious. -->
                 <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
-                            VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
+                            VerticalAlignment="Center" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <Grid>
                         <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
                         <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
@@ -105,8 +105,8 @@
                  list behind the bell badge instead. -->
             <StackPanel x:Name="TaskModeHost" Orientation="Vertical" HorizontalAlignment="Center"
                         Visibility="Collapsed">
-                <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,0,0,8"
-                        HorizontalAlignment="Center">
+                <Border x:Name="TaskTopBar" Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,0,0,8"
+                        HorizontalAlignment="Center" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="TaskClockText" Text="00:00" Foreground="{StaticResource WiltTextBrush}"
                                    FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
@@ -141,10 +141,10 @@
                 </Border>
 
                 <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" HorizontalAlignment="Stretch"
-                        MinWidth="260">
+                        MinWidth="260" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Vertical">
-                        <TextBlock Text="Tasks:" Foreground="{StaticResource WiltTextDimBrush}" FontSize="12"
-                                   Margin="2,0,0,6" />
+                        <TextBlock Text="Tasks:" Foreground="{StaticResource WiltTextBrush}" FontSize="13"
+                                   FontWeight="SemiBold" Margin="2,0,0,8" />
 
                         <!-- Capped at 5 visible rows; a longer list scrolls instead of growing the window. -->
                         <ScrollViewer x:Name="TaskListScroll" MaxHeight="165" VerticalScrollBarVisibility="Auto">
@@ -152,7 +152,7 @@
                         </ScrollViewer>
 
                         <TextBlock x:Name="NoTasksText" Text="No tasks yet today." FontSize="12"
-                                   Foreground="{StaticResource WiltTextDimBrush}" Margin="2,4,0,0"
+                                   Foreground="{StaticResource WiltTextBrush}" Opacity="0.75" Margin="2,4,0,0"
                                    Visibility="Collapsed" />
 
                         <Border x:Name="AddTaskRow" Margin="2,8,0,0" Cursor="Hand"
