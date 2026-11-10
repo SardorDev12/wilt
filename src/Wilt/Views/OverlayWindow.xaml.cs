@@ -386,6 +386,15 @@ public partial class OverlayWindow : Window
         RenderTasks();
     }
 
+    // Stops the click from bubbling up to the Tasks card's own
+    // MouseLeftButtonDown drag handler, which otherwise calls DragMove()
+    // and swallows the matching MouseUp before OnAddTaskRowClick ever sees
+    // it - the cause of "+ Add task" needing several clicks to register.
+    private void OnInteractiveRowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+    }
+
     private void OnAddTaskRowClick(object sender, MouseButtonEventArgs e)
     {
         AddTaskRow.Visibility = Visibility.Collapsed;
@@ -538,7 +547,7 @@ public partial class OverlayWindow : Window
         Grid.SetColumn(doneCheck, 4);
         grid.Children.Add(doneCheck);
 
-        return new Border
+        var row = new Border
         {
             Background = (Brush)FindResource(isActive ? "WiltAccentDimBrush" : "WiltRowChipBrush"),
             CornerRadius = new CornerRadius(8),
@@ -546,6 +555,8 @@ public partial class OverlayWindow : Window
             Margin = new Thickness(0, 0, 0, 6),
             Child = grid,
         };
+        row.MouseLeftButtonDown += OnInteractiveRowMouseLeftButtonDown;
+        return row;
     }
 
     private UIElement BuildMissedRow(WorkTask task)
@@ -588,7 +599,7 @@ public partial class OverlayWindow : Window
         Grid.SetColumn(dismissButton, 2);
         grid.Children.Add(dismissButton);
 
-        return new Border
+        var row = new Border
         {
             Background = (Brush)FindResource("WiltRowChipBrush"),
             CornerRadius = new CornerRadius(8),
@@ -596,6 +607,8 @@ public partial class OverlayWindow : Window
             Margin = new Thickness(0, 0, 0, 6),
             Child = grid,
         };
+        row.MouseLeftButtonDown += OnInteractiveRowMouseLeftButtonDown;
+        return row;
     }
 
     // ----- Visual state sync -----
