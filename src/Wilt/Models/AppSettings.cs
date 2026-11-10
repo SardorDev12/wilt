@@ -17,9 +17,18 @@ public enum CharacterPose
     SittingAtDesk,
 }
 
+/// <summary>Which content the overlay shows: the Pomodoro character, or the daily task list.</summary>
+public enum ViewMode
+{
+    Pomodoro,
+    Tasks,
+}
+
 /// <summary>User-configurable settings, persisted as JSON in %AppData%\Wilt\settings.json.</summary>
 public class AppSettings
 {
+    public ViewMode ViewMode { get; set; } = ViewMode.Tasks;
+
     public int FocusMinutes { get; set; } = 25;
     public int ShortBreakMinutes { get; set; } = 5;
     public int LongBreakMinutes { get; set; } = 15;

@@ -33,7 +33,10 @@ public partial class App : Application
 
         var timerEngine = new TimerEngine(settings);
 
-        _overlayWindow = new OverlayWindow(timerEngine, settingsService, historyService);
+        var taskPlanService = new TaskPlanService();
+        var taskEngine = new TaskEngine(taskPlanService);
+
+        _overlayWindow = new OverlayWindow(timerEngine, settingsService, historyService, taskEngine);
         _overlayWindow.Show();
 
         _trayIconService = new TrayIconService(timerEngine, settingsService, _overlayWindow);

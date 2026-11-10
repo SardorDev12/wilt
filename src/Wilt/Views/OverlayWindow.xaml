@@ -58,44 +58,119 @@
                 </StackPanel>
             </Border>
 
-            <!-- Character (draggable) with the session-progress ring beside it. Both
-                 poses are always in the tree; only the selected one is visible/active
-                 (PRD-inspired "Could have": alternate poses, user-selectable in Settings).
-                 The Start/Resume CTA sits directly over the character (not in the
-                 clock row) so it's the first thing you see whenever it needs a click -
-                 no animation needed to draw the eye when it's this obvious. -->
-            <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
-                        VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
-                <Grid>
-                    <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
-                    <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
-                                                    Visibility="Collapsed" />
-                    <Button x:Name="BigStartButton" Content="▶ Start" Style="{StaticResource WiltPrimaryPillButton}"
-                            Click="OnPlayPauseClick" ToolTip="Start" HorizontalAlignment="Center"
-                            VerticalAlignment="Center" Visibility="Collapsed" />
-                </Grid>
-                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                    <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" HorizontalAlignment="Center" />
-                    <!-- Progress toward the next long break, e.g. "2/4" -->
-                    <TextBlock x:Name="SessionsCounterText" Text="0/4" Foreground="{StaticResource WiltTextDimBrush}"
-                               FontSize="11" HorizontalAlignment="Center" Margin="0,3,0,0"
-                               ToolTip="Focus sessions completed toward the next long break" />
+            <StackPanel x:Name="PomodoroModeHost" Orientation="Vertical" HorizontalAlignment="Center">
+                <!-- Character (draggable) with the session-progress ring beside it. Both
+                     poses are always in the tree; only the selected one is visible/active
+                     (PRD-inspired "Could have": alternate poses, user-selectable in Settings).
+                     The Start/Resume CTA sits directly over the character (not in the
+                     clock row) so it's the first thing you see whenever it needs a click -
+                     no animation needed to draw the eye when it's this obvious. -->
+                <StackPanel x:Name="CharacterHost" Orientation="Horizontal" HorizontalAlignment="Center"
+                            VerticalAlignment="Center" MouseLeftButtonDown="OnCharacterMouseLeftButtonDown">
+                    <Grid>
+                        <controls:CharacterControl x:Name="StandingCharacter" VerticalAlignment="Center" />
+                        <controls:DeskCharacterControl x:Name="SittingCharacter" VerticalAlignment="Center"
+                                                        Visibility="Collapsed" />
+                        <Button x:Name="BigStartButton" Content="▶ Start" Style="{StaticResource WiltPrimaryPillButton}"
+                                Click="OnPlayPauseClick" ToolTip="Start" HorizontalAlignment="Center"
+                                VerticalAlignment="Center" Visibility="Collapsed" />
+                    </Grid>
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
+                        <controls:ProgressRing x:Name="Ring" Diameter="64" Thickness="4" HorizontalAlignment="Center" />
+                        <!-- Progress toward the next long break, e.g. "2/4" -->
+                        <TextBlock x:Name="SessionsCounterText" Text="0/4" Foreground="{StaticResource WiltTextDimBrush}"
+                                   FontSize="11" HorizontalAlignment="Center" Margin="0,3,0,0"
+                                   ToolTip="Focus sessions completed toward the next long break" />
+                    </StackPanel>
                 </StackPanel>
+
+                <!-- Clock + secondary controls, always reachable with a single click (PRD 9.1.1) -->
+                <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,8,0,0"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="TimeText" Text="25:00" Foreground="{StaticResource WiltTextBrush}"
+                                   FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
+                                   VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
+                        <Button x:Name="PauseButton" Content="⏸" Style="{StaticResource WiltIconButton}"
+                                Click="OnPlayPauseClick" ToolTip="Pause" Visibility="Collapsed" />
+                        <Button x:Name="FinishButton" Content="⏹" Style="{StaticResource WiltIconButton}"
+                                Click="OnFinishClick" ToolTip="Finish session" Margin="4,0,0,0" Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <!-- Clock + secondary controls, always reachable with a single click (PRD 9.1.1) -->
-            <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,8,0,0"
-                    HorizontalAlignment="Center">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="TimeText" Text="25:00" Foreground="{StaticResource WiltTextBrush}"
-                               FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
-                               VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
-                    <Button x:Name="PauseButton" Content="⏸" Style="{StaticResource WiltIconButton}"
-                            Click="OnPlayPauseClick" ToolTip="Pause" Visibility="Collapsed" />
-                    <Button x:Name="FinishButton" Content="⏹" Style="{StaticResource WiltIconButton}"
-                            Click="OnFinishClick" ToolTip="Finish session" Margin="4,0,0,0" Visibility="Collapsed" />
-                </StackPanel>
-            </Border>
+            <!-- Task Mode: a pure list view (no character, PRD-inspired decision: "others
+                 go default") showing only today's tasks. Tasks left undone from a previous
+                 day don't appear inline - they surface as a dismissible/movable "missed"
+                 list behind the bell badge instead. -->
+            <StackPanel x:Name="TaskModeHost" Orientation="Vertical" HorizontalAlignment="Center"
+                        Visibility="Collapsed">
+                <Border Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,0,0,8"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="TaskClockText" Text="00:00" Foreground="{StaticResource WiltTextBrush}"
+                                   FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
+                                   VerticalAlignment="Center" Margin="3,0,10,0" MinWidth="46" />
+                        <Grid Margin="0,0,4,0" Visibility="Collapsed" x:Name="MissedBadgeHost">
+                            <Button x:Name="MissedBadgeButton" Content="🔔" Style="{StaticResource WiltIconButton}"
+                                    Click="OnMissedBadgeClick" ToolTip="Missed tasks" />
+                            <Border Background="{StaticResource WiltAccentBrush}" CornerRadius="7" Width="14" Height="14"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-3,0"
+                                    IsHitTestVisible="False">
+                                <TextBlock x:Name="MissedCountText" Text="0" FontSize="9" FontWeight="Bold"
+                                           Foreground="{StaticResource WiltTextBrush}" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                        <Button x:Name="TaskNextButton" Content="⏭" Style="{StaticResource WiltIconButton}"
+                                Click="OnTaskNextClick" ToolTip="Next task" Margin="0,0,4,0" />
+                        <Button x:Name="TaskPauseButton" Content="⏸" Style="{StaticResource WiltIconButton}"
+                                Click="OnTaskPauseClick" ToolTip="Pause" Margin="0,0,4,0" />
+                        <Button x:Name="TaskCloseButton" Content="⏻" Style="{StaticResource WiltIconButton}"
+                                Click="OnQuitClick" ToolTip="Quit Wilt" />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="MissedPanel" Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" Margin="0,0,0,8"
+                        HorizontalAlignment="Stretch" MinWidth="260" Visibility="Collapsed">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Missed" Foreground="{StaticResource WiltTextDimBrush}" FontSize="11"
+                                   Margin="2,0,0,6" />
+                        <StackPanel x:Name="MissedRowsPanel" Orientation="Vertical" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" HorizontalAlignment="Stretch"
+                        MinWidth="260">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Tasks:" Foreground="{StaticResource WiltTextDimBrush}" FontSize="12"
+                                   Margin="2,0,0,6" />
+
+                        <!-- Capped at 5 visible rows; a longer list scrolls instead of growing the window. -->
+                        <ScrollViewer x:Name="TaskListScroll" MaxHeight="165" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="TaskRowsPanel" Orientation="Vertical" />
+                        </ScrollViewer>
+
+                        <TextBlock x:Name="NoTasksText" Text="No tasks yet today." FontSize="12"
+                                   Foreground="{StaticResource WiltTextDimBrush}" Margin="2,4,0,0"
+                                   Visibility="Collapsed" />
+
+                        <Border x:Name="AddTaskRow" Margin="2,8,0,0" Cursor="Hand"
+                                MouseLeftButtonUp="OnAddTaskRowClick" Background="#00FFFFFF">
+                            <TextBlock Text="+ Add task" Foreground="{StaticResource WiltAccentBrush}" FontSize="13"
+                                       FontWeight="SemiBold" />
+                        </Border>
+
+                        <StackPanel x:Name="AddTaskForm" Orientation="Horizontal" Margin="2,8,0,0"
+                                    Visibility="Collapsed">
+                            <TextBox x:Name="NewTaskNameBox" Width="130" Margin="0,0,6,0" />
+                            <TextBox x:Name="NewTaskMinutesBox" Width="42" Margin="0,0,6,0" ToolTip="Planned minutes" />
+                            <Button Content="Add" Style="{StaticResource WiltIconButton}" Width="44"
+                                    Click="OnConfirmAddTaskClick" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

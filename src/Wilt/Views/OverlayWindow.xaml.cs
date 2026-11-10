@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -23,18 +24,22 @@ public partial class OverlayWindow : Window
     private readonly TimerEngine _timerEngine;
     private readonly SettingsService _settingsService;
     private readonly HistoryService _historyService;
+    private readonly TaskEngine _taskEngine;
     private readonly SoundService _soundService = new();
 
     private IntPtr _hwnd;
     private ICharacterView _activeCharacter;
     private ClickThroughIndicatorWindow? _clickThroughIndicator;
+    private bool _missedPanelOpen;
 
-    public OverlayWindow(TimerEngine timerEngine, SettingsService settingsService, HistoryService historyService)
+    public OverlayWindow(TimerEngine timerEngine, SettingsService settingsService, HistoryService historyService,
+        TaskEngine taskEngine)
     {
         InitializeComponent();
         _timerEngine = timerEngine;
         _settingsService = settingsService;
         _historyService = historyService;
+        _taskEngine = taskEngine;
 
         _activeCharacter = StandingCharacter;
         _activeCharacter.SetActive(true);
@@ -50,7 +55,11 @@ public partial class OverlayWindow : Window
         _timerEngine.PhaseStarted += (_, phase) => Dispatcher.Invoke(() => OnPhaseStarted(phase));
         _timerEngine.PhaseCompleted += (_, phase) => Dispatcher.Invoke(() => OnPhaseCompleted(phase));
 
+        _taskEngine.Tick += (_, _) => Dispatcher.Invoke(UpdateTaskClock);
+        _taskEngine.TasksChanged += (_, _) => Dispatcher.Invoke(RenderTasks);
+
         UpdateVisualState();
+        RenderTasks();
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
@@ -89,12 +98,39 @@ public partial class OverlayWindow : Window
         ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
+        SwitchViewMode(settings.ViewMode);
+
         if (initialPlacement)
         {
             PlaceOnRememberedMonitor(settings);
         }
 
         UpdateVisualState();
+    }
+
+    // ----- Task Mode (view-mode switch lives in Settings; PRD-inspired decisions:
+    // default view is Tasks, switching to Tasks pauses any running Pomodoro
+    // session, and the character never appears in Task Mode) -----
+
+    private void SwitchViewMode(ViewMode mode)
+    {
+        var isTasks = mode == ViewMode.Tasks;
+
+        if (isTasks && _timerEngine.RunState == RunState.Running)
+        {
+            _timerEngine.TogglePauseResume();
+        }
+
+        PomodoroModeHost.Visibility = isTasks ? Visibility.Collapsed : Visibility.Visible;
+        TaskModeHost.Visibility = isTasks ? Visibility.Visible : Visibility.Collapsed;
+
+        // Skip only means something for Pomodoro phases.
+        SkipButton.Visibility = isTasks ? Visibility.Collapsed : Visibility.Visible;
+
+        if (isTasks)
+        {
+            RenderTasks();
+        }
     }
 
     private void ApplyClickThrough(bool enabled)
@@ -317,6 +353,208 @@ public partial class OverlayWindow : Window
 
         _settingsWindow.Show();
         _settingsWindow.Activate();
+    }
+
+    // ----- Task Mode controls -----
+
+    private void OnTaskNextClick(object sender, RoutedEventArgs e) => _taskEngine.Next();
+
+    private void OnTaskPauseClick(object sender, RoutedEventArgs e)
+    {
+        if (_taskEngine.IsActiveRunning)
+        {
+            _taskEngine.PauseActive();
+        }
+        else if (_taskEngine.ActiveTaskId.HasValue)
+        {
+            _taskEngine.StartTask(_taskEngine.ActiveTaskId.Value);
+        }
+    }
+
+    private void OnMissedBadgeClick(object sender, RoutedEventArgs e)
+    {
+        _missedPanelOpen = !_missedPanelOpen;
+        RenderTasks();
+    }
+
+    private void OnAddTaskRowClick(object sender, MouseButtonEventArgs e)
+    {
+        AddTaskRow.Visibility = Visibility.Collapsed;
+        AddTaskForm.Visibility = Visibility.Visible;
+        NewTaskNameBox.Focus();
+    }
+
+    private void OnConfirmAddTaskClick(object sender, RoutedEventArgs e)
+    {
+        var name = NewTaskNameBox.Text.Trim();
+        if (string.IsNullOrEmpty(name) || !int.TryParse(NewTaskMinutesBox.Text, out var minutes) || minutes <= 0)
+        {
+            return;
+        }
+
+        _taskEngine.AddTask(name, minutes);
+
+        NewTaskNameBox.Text = "";
+        NewTaskMinutesBox.Text = "";
+        AddTaskForm.Visibility = Visibility.Collapsed;
+        AddTaskRow.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateTaskClock()
+    {
+        var active = _taskEngine.ActiveTask;
+        TaskClockText.Text = active != null ? FormatTime(active.WorkedSeconds) : "00:00";
+        TaskPauseButton.Content = _taskEngine.IsActiveRunning ? "⏸" : "▶";
+        TaskPauseButton.ToolTip = _taskEngine.IsActiveRunning ? "Pause" : "Start";
+        TaskPauseButton.IsEnabled = active != null;
+    }
+
+    private void RenderTasks()
+    {
+        UpdateTaskClock();
+
+        var today = _taskEngine.TodayTasks;
+        var missed = _taskEngine.MissedTasks;
+
+        NoTasksText.Visibility = today.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        TaskListScroll.Visibility = today.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+        TaskRowsPanel.Children.Clear();
+        for (var i = 0; i < today.Count; i++)
+        {
+            TaskRowsPanel.Children.Add(BuildTaskRow(today[i], i + 1));
+        }
+
+        MissedBadgeHost.Visibility = missed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MissedCountText.Text = missed.Count.ToString();
+
+        MissedPanel.Visibility = _missedPanelOpen && missed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MissedRowsPanel.Children.Clear();
+        foreach (var task in missed)
+        {
+            MissedRowsPanel.Children.Add(BuildMissedRow(task));
+        }
+    }
+
+    private UIElement BuildTaskRow(WorkTask task, int number)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var isActive = _taskEngine.ActiveTaskId == task.Id;
+        var textBrush = (Brush)FindResource(task.IsDone ? "WiltTextDimBrush" : "WiltTextBrush");
+
+        var nameText = new TextBlock
+        {
+            Text = $"{number}. {task.Name} — {(int)(task.WorkedSeconds / 60)}/{task.PlannedMinutes}",
+            Foreground = textBrush,
+            FontSize = 12,
+            FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        if (task.IsDone)
+        {
+            nameText.TextDecorations = TextDecorations.Strikethrough;
+        }
+
+        Grid.SetColumn(nameText, 0);
+        Grid.SetColumnSpan(nameText, 2);
+        grid.Children.Add(nameText);
+
+        var startPauseButton = new Button
+        {
+            Content = isActive && _taskEngine.IsActiveRunning ? "⏸" : "▶",
+            Style = (Style)FindResource("WiltIconButton"),
+            ToolTip = isActive && _taskEngine.IsActiveRunning ? "Pause" : "Start",
+            IsEnabled = !task.IsDone,
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        startPauseButton.Click += (_, _) =>
+        {
+            if (isActive && _taskEngine.IsActiveRunning)
+            {
+                _taskEngine.PauseActive();
+            }
+            else
+            {
+                _taskEngine.StartTask(task.Id);
+            }
+        };
+        Grid.SetColumn(startPauseButton, 2);
+        grid.Children.Add(startPauseButton);
+
+        var finishButton = new Button
+        {
+            Content = "⏹",
+            Style = (Style)FindResource("WiltIconButton"),
+            ToolTip = "Finish",
+            IsEnabled = !task.IsDone,
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        finishButton.Click += (_, _) => _taskEngine.FinishTask(task.Id);
+        Grid.SetColumn(finishButton, 3);
+        grid.Children.Add(finishButton);
+
+        var doneCheck = new CheckBox
+        {
+            IsChecked = task.IsDone,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0),
+        };
+        doneCheck.Checked += (_, _) => _taskEngine.ToggleDone(task.Id);
+        doneCheck.Unchecked += (_, _) => _taskEngine.ToggleDone(task.Id);
+        Grid.SetColumn(doneCheck, 4);
+        grid.Children.Add(doneCheck);
+
+        return grid;
+    }
+
+    private UIElement BuildMissedRow(WorkTask task)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var nameText = new TextBlock
+        {
+            Text = $"{task.Name} ({task.Date:MMM d})",
+            Foreground = (Brush)FindResource("WiltTextBrush"),
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        Grid.SetColumn(nameText, 0);
+        grid.Children.Add(nameText);
+
+        var moveButton = new Button
+        {
+            Content = "↩",
+            Style = (Style)FindResource("WiltIconButton"),
+            ToolTip = "Move to today",
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        moveButton.Click += (_, _) => _taskEngine.MoveMissedToToday(task.Id);
+        Grid.SetColumn(moveButton, 1);
+        grid.Children.Add(moveButton);
+
+        var dismissButton = new Button
+        {
+            Content = "✕",
+            Style = (Style)FindResource("WiltIconButton"),
+            ToolTip = "Dismiss",
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        dismissButton.Click += (_, _) => _taskEngine.DismissMissed(task.Id);
+        Grid.SetColumn(dismissButton, 2);
+        grid.Children.Add(dismissButton);
+
+        return grid;
     }
 
     // ----- Visual state sync -----

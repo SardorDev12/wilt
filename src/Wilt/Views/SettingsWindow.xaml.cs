@@ -33,6 +33,15 @@ public partial class SettingsWindow : Window
 
     private void LoadFromSettings(AppSettings s)
     {
+        foreach (ComboBoxItem item in ViewModeComboBox.Items)
+        {
+            if ((string)item.Tag == s.ViewMode.ToString())
+            {
+                ViewModeComboBox.SelectedItem = item;
+                break;
+            }
+        }
+
         FocusMinutesBox.Text = s.FocusMinutes.ToString();
         ShortBreakMinutesBox.Text = s.ShortBreakMinutes.ToString();
         LongBreakMinutesBox.Text = s.LongBreakMinutes.ToString();
@@ -125,6 +134,18 @@ public partial class SettingsWindow : Window
 
         var s = CurrentDraft();
         s.OverlayOpacity = OverlayOpacitySlider.Value;
+        _settingsService.Save(s);
+    }
+
+    private void OnViewModeChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || ViewModeComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        var s = CurrentDraft();
+        s.ViewMode = Enum.Parse<ViewMode>((string)item.Tag);
         _settingsService.Save(s);
     }
 
