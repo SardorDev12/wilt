@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -485,6 +486,20 @@ public partial class OverlayWindow : Window
         else if (e.Key == Key.Escape)
         {
             CloseAddTaskForm();
+        }
+    }
+
+    private void OnMinutesPreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        e.Handled = !e.Text.All(char.IsDigit);
+    }
+
+    private void OnMinutesPreviewExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (e.Command == ApplicationCommands.Paste &&
+            (!System.Windows.Clipboard.ContainsText() || !System.Windows.Clipboard.GetText().All(char.IsDigit)))
+        {
+            e.Handled = true;
         }
     }
 
