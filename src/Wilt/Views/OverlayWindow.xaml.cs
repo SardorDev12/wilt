@@ -113,9 +113,12 @@ public partial class OverlayWindow : Window
         ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
         TaskClickThroughButton.Content = BuildLockIcon(settings.ClickThrough);
         TaskClickThroughButton.ToolTip = ClickThroughButton.ToolTip;
-        SetClickThroughIndicatorVisible(settings.ClickThrough);
 
+        // Settle which view mode's layout is active *before* positioning the
+        // click-through indicator against it - it picks the active mode's
+        // own lock button, so it needs that mode's visibility already set.
         SwitchViewMode(settings.ViewMode);
+        SetClickThroughIndicatorVisible(settings.ClickThrough);
 
         if (initialPlacement)
         {
@@ -205,10 +208,25 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        // Same horizontal center, flush with the top edge - matching where
-        // the (now unreachable) control strip sits within this window.
-        _clickThroughIndicator.Left = Left + (ActualWidth - _clickThroughIndicator.ActualWidth) / 2;
-        _clickThroughIndicator.Top = Top;
+        // Center the indicator exactly over whichever button is actually the
+        // click-through toggle for the current view mode, rather than
+        // assuming it sits at the window's horizontal center - that only
+        // held for Pomodoro's old, symmetric control strip. Task Mode's top
+        // bar leads with a wide clock label, which shifts its icon row well
+        // off the window's center, and the indicator was landing on the
+        // nearest other icon (the pause/start button) instead.
+        var activeButton = TaskModeHost.Visibility == Visibility.Visible ? (UIElement)TaskClickThroughButton : ClickThroughButton;
+
+        var topLeftPhysical = activeButton.PointToScreen(new Point(0, 0));
+        var source = PresentationSource.FromVisual(this);
+        var m = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+        var topLeftDip = m.Transform(topLeftPhysical);
+
+        var centerX = topLeftDip.X + activeButton.RenderSize.Width / 2;
+        var centerY = topLeftDip.Y + activeButton.RenderSize.Height / 2;
+
+        _clickThroughIndicator.Left = centerX - _clickThroughIndicator.ActualWidth / 2;
+        _clickThroughIndicator.Top = centerY - _clickThroughIndicator.ActualHeight / 2;
     }
 
     /// <summary>
@@ -416,7 +434,17 @@ public partial class OverlayWindow : Window
     {
         AddTaskRow.Visibility = Visibility.Collapsed;
         AddTaskForm.Visibility = Visibility.Visible;
+
+        // The overlay is WS_EX_NOACTIVATE (PRD 10.2: never steals keyboard
+        // focus from whatever app you're using) - great for a passive
+        // character, but it means the window can never actually become the
+        // focused one, so typed keystrokes kept going to whatever app was
+        // last active instead of this textbox. Temporarily allow activation
+        // just while the form is open, and explicitly take focus.
+        SetTextInputCapable(true);
+        Activate();
         NewTaskNameBox.Focus();
+        Keyboard.Focus(NewTaskNameBox);
     }
 
     private void CloseAddTaskForm()
@@ -425,6 +453,16 @@ public partial class OverlayWindow : Window
         AddTaskRow.Visibility = Visibility.Visible;
         NewTaskNameBox.Text = "";
         NewTaskMinutesBox.Text = "";
+        SetTextInputCapable(false);
+    }
+
+    /// <summary>Toggles WS_EX_NOACTIVATE off/on around text entry - see OnAddTaskRowClick.</summary>
+    private void SetTextInputCapable(bool enabled)
+    {
+        if (_hwnd != IntPtr.Zero)
+        {
+            NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_NOACTIVATE, !enabled);
+        }
     }
 
     private void OnCancelAddTaskClick(object sender, RoutedEventArgs e) => CloseAddTaskForm();
