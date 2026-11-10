@@ -27,6 +27,14 @@ public class TimerEngine
     /// </summary>
     public Phase? PendingPhase { get; private set; }
 
+    /// <summary>
+    /// True from the moment a phase's time runs out until the user
+    /// acknowledges it (Start/Resume, Skip, or Finish) - the clock keeps
+    /// running into overtime during this window instead of freezing at
+    /// 00:00, so there's always something visibly moving to notice.
+    /// </summary>
+    public bool AwaitingAcknowledgment { get; private set; }
+
     /// <summary>Total duration of the current phase, in seconds.</summary>
     public double PhaseDurationSeconds { get; private set; }
 
@@ -57,6 +65,9 @@ public class TimerEngine
 
     public double Progress01 => PhaseDurationSeconds <= 0 ? 0 : Math.Clamp(ElapsedSeconds / PhaseDurationSeconds, 0, 1);
 
+    /// <summary>How far past the phase's planned duration the clock has kept counting while AwaitingAcknowledgment.</summary>
+    public double OvertimeSeconds => AwaitingAcknowledgment ? Math.Max(0, ElapsedSeconds - PhaseDurationSeconds) : 0;
+
     public void ApplySettings(AppSettings settings)
     {
         var previousDuration = PhaseDurationSeconds;
@@ -77,6 +88,12 @@ public class TimerEngine
 
     public void Start()
     {
+        if (AwaitingAcknowledgment)
+        {
+            AcknowledgeCompletion();
+            return;
+        }
+
         if (Phase == Phase.Inviting)
         {
             BeginPhase(PendingPhase ?? Phase.Focus);
@@ -89,6 +106,12 @@ public class TimerEngine
 
     public void TogglePauseResume()
     {
+        if (AwaitingAcknowledgment)
+        {
+            AcknowledgeCompletion();
+            return;
+        }
+
         if (Phase == Phase.Inviting)
         {
             Start();
@@ -105,6 +128,16 @@ public class TimerEngine
         }
     }
 
+    /// <summary>Begins the queued next phase - called once the user acknowledges a phase that ran into overtime.</summary>
+    private void AcknowledgeCompletion()
+    {
+        AwaitingAcknowledgment = false;
+        BeginPhase(PendingPhase ?? Phase.Focus);
+        PendingPhase = null;
+        RunState = RunState.Running;
+        _timer.Start();
+    }
+
     /// <summary>
     /// Ends the current session immediately, counted as complete rather than
     /// abandoned, then returns to Inviting (PRD 9.1.1) — a deliberate stop,
@@ -114,6 +147,22 @@ public class TimerEngine
     {
         if (Phase == Phase.Inviting)
         {
+            return;
+        }
+
+        if (AwaitingAcknowledgment)
+        {
+            // Already recorded as complete when overtime began - this just
+            // dismisses it without starting the queued next phase.
+            AwaitingAcknowledgment = false;
+            PendingPhase = null;
+            _timer.Stop();
+            Phase = Phase.Inviting;
+            RunState = RunState.Idle;
+            ElapsedSeconds = 0;
+            PhaseDurationSeconds = 0;
+            Energy = 100;
+            PhaseStarted?.Invoke(this, Phase.Inviting);
             return;
         }
 
@@ -133,6 +182,12 @@ public class TimerEngine
     /// <summary>Skips straight to the next phase in rotation (used by tray/hotkey "skip").</summary>
     public void Skip()
     {
+        if (AwaitingAcknowledgment)
+        {
+            AcknowledgeCompletion();
+            return;
+        }
+
         if (Phase == Phase.Inviting)
         {
             Start();
@@ -149,10 +204,12 @@ public class TimerEngine
             ElapsedSeconds += _timer.Interval.TotalSeconds;
             UpdateEnergy();
 
-            if (ElapsedSeconds >= PhaseDurationSeconds && PhaseDurationSeconds > 0)
+            if (!AwaitingAcknowledgment && ElapsedSeconds >= PhaseDurationSeconds && PhaseDurationSeconds > 0)
             {
                 // Auto-start is disabled: a phase ending on its own hands control
                 // back to the user rather than silently rolling into the next one.
+                // The clock keeps running afterward (AwaitingAcknowledgment) so it
+                // doesn't just freeze at 00:00 while waiting to be noticed.
                 AdvanceToNextPhase(autoContinue: false);
             }
         }
@@ -224,13 +281,13 @@ public class TimerEngine
         }
         else
         {
+            // Auto-start is still disabled - the next phase doesn't actually
+            // begin until the user acknowledges it - but Phase/ElapsedSeconds
+            // are left as they are so the clock keeps counting into overtime
+            // instead of freezing at 00:00.
             PendingPhase = nextPhase;
-            Phase = Phase.Inviting;
-            ElapsedSeconds = 0;
-            PhaseDurationSeconds = 0;
-            Energy = 100;
-            RunState = RunState.Idle;
-            PhaseStarted?.Invoke(this, Phase.Inviting);
+            AwaitingAcknowledgment = true;
+            RunState = RunState.Running;
         }
 
         // Keep the tick loop running even while idle/paused: OnTick's

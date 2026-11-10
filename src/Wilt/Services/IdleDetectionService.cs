@@ -45,7 +45,7 @@ public class IdleDetectionService
         // Focus only: being away from the keyboard/mouse during a break is
         // expected (that's the point of the break), so idle detection
         // shouldn't stall it out.
-        var isActiveFocusSession = _timerEngine.Phase == Phase.Focus;
+        var isActiveFocusSession = _timerEngine.Phase == Phase.Focus && !_timerEngine.AwaitingAcknowledgment;
 
         if (!isActiveFocusSession)
         {

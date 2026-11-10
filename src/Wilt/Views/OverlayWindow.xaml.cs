@@ -130,7 +130,11 @@ public partial class OverlayWindow : Window
     {
         var isTasks = mode == ViewMode.Tasks;
 
-        if (isTasks && _timerEngine.RunState == RunState.Running)
+        // AwaitingAcknowledgment also reports RunState.Running (the clock
+        // keeps counting into overtime) - but TogglePauseResume() would
+        // treat that as acknowledging and silently start the next phase,
+        // which switching view modes should never do.
+        if (isTasks && _timerEngine.RunState == RunState.Running && !_timerEngine.AwaitingAcknowledgment)
         {
             _timerEngine.TogglePauseResume();
         }
@@ -653,17 +657,29 @@ public partial class OverlayWindow : Window
         _activeCharacter.ApplyState(_timerEngine.Energy, state);
 
         var isInviting = _timerEngine.Phase == Phase.Inviting;
+        var awaitingAck = _timerEngine.AwaitingAcknowledgment;
         var pendingPhase = _timerEngine.PendingPhase;
 
         // Ring shows *remaining* time depleting (PRD 9.1.1), so it starts full
-        // and shrinks toward empty as the session progresses.
-        Ring.Progress = isInviting ? 0 : 1 - _timerEngine.Progress01;
+        // and shrinks toward empty as the session progresses. Once a phase
+        // runs into overtime there's nothing left to deplete - keep it empty.
+        Ring.Progress = isInviting || awaitingAck ? 0 : 1 - _timerEngine.Progress01;
 
         SessionsCounterText.Text = $"{_timerEngine.SessionsCompletedSinceLongBreak}/{_settingsService.Current.SessionsUntilLongBreak}";
 
         TimeText.Text = isInviting
             ? FormatMinutes(PendingPhaseMinutes(pendingPhase))
-            : FormatTime(_timerEngine.RemainingSeconds);
+            : awaitingAck
+                ? "+" + FormatTime(_timerEngine.OvertimeSeconds)
+                : FormatTime(_timerEngine.RemainingSeconds);
+
+        CompletionBanner.Visibility = awaitingAck ? Visibility.Visible : Visibility.Collapsed;
+        if (awaitingAck)
+        {
+            CompletionBannerText.Text = _timerEngine.Phase == Phase.Focus
+                ? "Focus session complete!"
+                : "Break complete!";
+        }
 
         // While click-through is on, this window can't be clicked at all (see
         // the click-through section below) - showing Finish/Pause as if they
@@ -671,15 +687,15 @@ public partial class OverlayWindow : Window
         var clickThrough = _settingsService.Current.ClickThrough;
         FinishButton.Visibility = !clickThrough && !isInviting ? Visibility.Visible : Visibility.Collapsed;
 
-        // Not running - whether never started, a session just ended and is
-        // queued waiting on the user (auto-start is disabled - nothing times
-        // down until Start is pressed), or manually paused mid-session - shows
-        // the wide labeled accent pill over the character. Actively running
-        // shows just the plain, quiet pause icon in the clock row instead.
-        var needsAttention = _timerEngine.RunState != RunState.Running;
+        // Not running, or a phase just ran out and is awaiting acknowledgment
+        // (the clock is still counting overtime, but nothing new starts
+        // without an explicit click) - shows the wide labeled accent pill
+        // over the character. Actively running a phase shows just the plain,
+        // quiet pause icon in the clock row instead.
+        var needsAttention = _timerEngine.RunState != RunState.Running || awaitingAck;
         BigStartButton.Visibility = needsAttention ? Visibility.Visible : Visibility.Collapsed;
-        BigStartButton.Content = isInviting ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
-        BigStartButton.ToolTip = isInviting ? PendingPhaseLabel(pendingPhase) : "Resume";
+        BigStartButton.Content = isInviting || awaitingAck ? $"▶ {PendingPhaseLabel(pendingPhase)}" : "▶ Resume";
+        BigStartButton.ToolTip = isInviting || awaitingAck ? PendingPhaseLabel(pendingPhase) : "Resume";
 
         PauseButton.Visibility = !clickThrough && !needsAttention ? Visibility.Visible : Visibility.Collapsed;
     }

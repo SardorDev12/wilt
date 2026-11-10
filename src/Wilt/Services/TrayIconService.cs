@@ -92,7 +92,9 @@ public class TrayIconService : IDisposable
         // NotifyIcon.Text has a 63-char limit.
         _notifyIcon.Text = text.Length > 63 ? text[..63] : text;
 
-        _startPauseItem.Text = _timerEngine.RunState == RunState.Running ? "Pause" : "Start";
+        _startPauseItem.Text = _timerEngine.AwaitingAcknowledgment
+            ? "Start next"
+            : _timerEngine.RunState == RunState.Running ? "Pause" : "Start";
     }
 
     public void Dispose()
