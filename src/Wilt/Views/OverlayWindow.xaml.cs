@@ -102,6 +102,16 @@ public partial class OverlayWindow : Window
         TaskClickThroughButton.ToolTip = ClickThroughButton.ToolTip;
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
+        // Once click-through is on, none of these are actually clickable (the
+        // whole window stops receiving mouse input) - dim them to show that,
+        // same spirit as hiding Finish/Pause in Pomodoro mode. The toggle
+        // itself stays full-opacity as the one visible indicator of state.
+        var inertOpacity = settings.ClickThrough ? 0.35 : 1.0;
+        TaskNextButton.Opacity = inertOpacity;
+        TaskPauseButton.Opacity = inertOpacity;
+        TaskSettingsButton.Opacity = inertOpacity;
+        TaskCloseButton.Opacity = inertOpacity;
+
         SwitchViewMode(settings.ViewMode);
 
         if (initialPlacement)
