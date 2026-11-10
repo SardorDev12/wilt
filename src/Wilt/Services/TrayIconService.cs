@@ -17,15 +17,17 @@ public class TrayIconService : IDisposable
 {
     private readonly TimerEngine _timerEngine;
     private readonly SettingsService _settingsService;
+    private readonly TaskEngine _taskEngine;
     private readonly OverlayWindow _overlayWindow;
     private NotifyIcon? _notifyIcon;
     private ToolStripMenuItem? _startPauseItem;
     private SettingsWindow? _settingsWindow;
 
-    public TrayIconService(TimerEngine timerEngine, SettingsService settingsService, OverlayWindow overlayWindow)
+    public TrayIconService(TimerEngine timerEngine, SettingsService settingsService, TaskEngine taskEngine, OverlayWindow overlayWindow)
     {
         _timerEngine = timerEngine;
         _settingsService = settingsService;
+        _taskEngine = taskEngine;
         _overlayWindow = overlayWindow;
     }
 
@@ -60,7 +62,7 @@ public class TrayIconService : IDisposable
     {
         if (_settingsWindow == null || !_settingsWindow.IsLoaded)
         {
-            _settingsWindow = new SettingsWindow(_settingsService, _overlayWindow);
+            _settingsWindow = new SettingsWindow(_settingsService, _taskEngine, _overlayWindow);
         }
 
         _settingsWindow.Show();

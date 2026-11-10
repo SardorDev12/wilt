@@ -39,7 +39,7 @@ public partial class App : Application
         _overlayWindow = new OverlayWindow(timerEngine, settingsService, historyService, taskEngine);
         _overlayWindow.Show();
 
-        _trayIconService = new TrayIconService(timerEngine, settingsService, _overlayWindow);
+        _trayIconService = new TrayIconService(timerEngine, settingsService, taskEngine, _overlayWindow);
         _trayIconService.Initialize();
 
         _hotkeyService = new HotkeyService(_overlayWindow, timerEngine);

@@ -41,17 +41,58 @@ public class TaskEngine
 
     public WorkTask? ActiveTask => ActiveTaskId.HasValue ? _tasks.FirstOrDefault(t => t.Id == ActiveTaskId.Value) : null;
 
-    public WorkTask AddTask(string name, int plannedMinutes)
+    /// <summary>Every task regardless of date, newest first - for the Task Manager window (Settings).</summary>
+    public IReadOnlyList<WorkTask> AllTasks => _tasks.OrderByDescending(t => t.Date).ToList();
+
+    public WorkTask AddTask(string name, int plannedMinutes) => AddTask(name, plannedMinutes, DateTime.Today);
+
+    public WorkTask AddTask(string name, int plannedMinutes, DateTime date)
     {
         var task = new WorkTask
         {
             Name = name,
             PlannedMinutes = plannedMinutes,
-            Date = DateTime.Today,
+            Date = date.Date,
         };
         _tasks.Add(task);
         Save();
         return task;
+    }
+
+    /// <summary>Full edit of a task's fields (Task Manager window) - distinct from the in-flow ToggleDone/MoveMissedToToday actions.</summary>
+    public void UpdateTask(Guid id, string name, int plannedMinutes, DateTime date, bool isDone)
+    {
+        var task = _tasks.FirstOrDefault(t => t.Id == id);
+        if (task == null)
+        {
+            return;
+        }
+
+        task.Name = name;
+        task.PlannedMinutes = plannedMinutes;
+        task.Date = date.Date;
+        task.IsDone = isDone;
+
+        if (isDone && ActiveTaskId == id)
+        {
+            ActiveTaskId = null;
+            IsActiveRunning = false;
+        }
+
+        Save();
+    }
+
+    /// <summary>Removes a task outright, regardless of date - the Task Manager window's Delete.</summary>
+    public void DeleteTask(Guid id)
+    {
+        if (ActiveTaskId == id)
+        {
+            ActiveTaskId = null;
+            IsActiveRunning = false;
+        }
+
+        _tasks.RemoveAll(t => t.Id == id);
+        Save();
     }
 
     public void StartTask(Guid id)
@@ -152,11 +193,7 @@ public class TaskEngine
         Save();
     }
 
-    public void DismissMissed(Guid id)
-    {
-        _tasks.RemoveAll(t => t.Id == id);
-        Save();
-    }
+    public void DismissMissed(Guid id) => DeleteTask(id);
 
     private void OnTick(object? sender, EventArgs e)
     {

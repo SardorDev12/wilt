@@ -402,7 +402,7 @@ public partial class OverlayWindow : Window
     {
         if (_settingsWindow == null || !_settingsWindow.IsLoaded)
         {
-            _settingsWindow = new SettingsWindow(_settingsService, this);
+            _settingsWindow = new SettingsWindow(_settingsService, _taskEngine, this);
         }
 
         _settingsWindow.Show();

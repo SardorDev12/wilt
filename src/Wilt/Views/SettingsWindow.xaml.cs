@@ -17,18 +17,26 @@ namespace Wilt.Views;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsService _settingsService;
+    private readonly TaskEngine _taskEngine;
     private readonly HistoryService _historyService = new();
     private bool _isInitializing = true;
 
-    public SettingsWindow(SettingsService settingsService, OverlayWindow overlayWindow)
+    public SettingsWindow(SettingsService settingsService, TaskEngine taskEngine, OverlayWindow overlayWindow)
     {
         InitializeComponent();
         _settingsService = settingsService;
+        _taskEngine = taskEngine;
         Owner = overlayWindow.IsLoaded ? overlayWindow : null;
 
         LoadFromSettings(_settingsService.Current);
         RefreshStats();
         _isInitializing = false;
+    }
+
+    private void OnManageTasksClick(object sender, RoutedEventArgs e)
+    {
+        var window = new TaskManagerWindow(_taskEngine) { Owner = this };
+        window.ShowDialog();
     }
 
     private void LoadFromSettings(AppSettings s)
