@@ -13,7 +13,7 @@
         SizeToContent="WidthAndHeight"
         MouseEnter="OnMouseEnterOverlay"
         MouseLeave="OnMouseLeaveOverlay">
-    <Grid x:Name="RootGrid" Background="#01000000">
+    <Grid x:Name="RootGrid" Background="#01000000" PreviewMouseLeftButtonDown="OnRootPreviewMouseLeftButtonDown">
         <!--
           Background is alpha=1 (imperceptible) rather than fully transparent
           on purpose: this is a per-pixel-alpha layered window (AllowsTransparency),
@@ -126,6 +126,10 @@
                                 Click="OnTaskNextClick" ToolTip="Next task" Margin="0,0,4,0" />
                         <Button x:Name="TaskPauseButton" Content="⏸" Style="{StaticResource WiltIconButton}"
                                 Click="OnTaskPauseClick" ToolTip="Pause" Margin="0,0,4,0" />
+                        <Button x:Name="TaskSettingsButton" Content="⚙" Style="{StaticResource WiltIconButton}"
+                                Click="OnSettingsClick" ToolTip="Settings" Margin="0,0,4,0" />
+                        <Button x:Name="TaskClickThroughButton" Content="🔒" Style="{StaticResource WiltIconButton}"
+                                Click="OnClickThroughToggleClick" ToolTip="Toggle click-through" Margin="0,0,4,0" />
                         <Button x:Name="TaskCloseButton" Content="⏻" Style="{StaticResource WiltIconButton}"
                                 Click="OnQuitClick" ToolTip="Quit Wilt" />
                     </StackPanel>
@@ -156,7 +160,7 @@
                                    Visibility="Collapsed" />
 
                         <Border x:Name="AddTaskRow" Margin="2,8,0,0" Cursor="Hand"
-                                MouseLeftButtonUp="OnAddTaskRowClick" Background="#00FFFFFF">
+                                MouseLeftButtonUp="OnAddTaskRowClick" Background="#01FFFFFF">
                             <TextBlock Text="+ Add task" Foreground="{StaticResource WiltAccentBrush}" FontSize="13"
                                        FontWeight="SemiBold" />
                         </Border>

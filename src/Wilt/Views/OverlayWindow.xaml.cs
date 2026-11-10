@@ -98,6 +98,8 @@ public partial class OverlayWindow : Window
 
         ClickThroughButton.Content = settings.ClickThrough ? "🔓" : "🔒";
         ClickThroughButton.ToolTip = settings.ClickThrough ? "Disable click-through" : "Enable click-through";
+        TaskClickThroughButton.Content = ClickThroughButton.Content;
+        TaskClickThroughButton.ToolTip = ClickThroughButton.ToolTip;
         SetClickThroughIndicatorVisible(settings.ClickThrough);
 
         SwitchViewMode(settings.ViewMode);
@@ -126,8 +128,9 @@ public partial class OverlayWindow : Window
         PomodoroModeHost.Visibility = isTasks ? Visibility.Collapsed : Visibility.Visible;
         TaskModeHost.Visibility = isTasks ? Visibility.Visible : Visibility.Collapsed;
 
-        // Skip only means something for Pomodoro phases.
-        SkipButton.Visibility = isTasks ? Visibility.Collapsed : Visibility.Visible;
+        // Task Mode folds settings/click-through/quit into its own always-visible
+        // top bar (one row, no hover needed) instead of the Pomodoro hover strip.
+        ControlStrip.Visibility = isTasks ? Visibility.Collapsed : Visibility.Visible;
 
         if (isTasks)
         {
@@ -390,6 +393,25 @@ public partial class OverlayWindow : Window
         NewTaskNameBox.Focus();
     }
 
+    private void CloseAddTaskForm()
+    {
+        AddTaskForm.Visibility = Visibility.Collapsed;
+        AddTaskRow.Visibility = Visibility.Visible;
+    }
+
+    private void OnRootPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (AddTaskForm.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (e.OriginalSource is DependencyObject source && !AddTaskForm.IsAncestorOf(source))
+        {
+            CloseAddTaskForm();
+        }
+    }
+
     private void OnConfirmAddTaskClick(object sender, RoutedEventArgs e)
     {
         var name = NewTaskNameBox.Text.Trim();
@@ -402,8 +424,7 @@ public partial class OverlayWindow : Window
 
         NewTaskNameBox.Text = "";
         NewTaskMinutesBox.Text = "";
-        AddTaskForm.Visibility = Visibility.Collapsed;
-        AddTaskRow.Visibility = Visibility.Visible;
+        CloseAddTaskForm();
     }
 
     private void UpdateTaskClock()
