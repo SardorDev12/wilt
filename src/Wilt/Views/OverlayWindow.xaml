@@ -116,7 +116,7 @@
             <StackPanel x:Name="TaskModeHost" Orientation="Vertical" HorizontalAlignment="Center"
                         Visibility="Collapsed">
                 <Border x:Name="TaskTopBar" Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,0,0,8"
-                        HorizontalAlignment="Stretch" MinWidth="260" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
+                        HorizontalAlignment="Stretch" Width="280" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <TextBlock x:Name="TaskClockText" Text="00:00" Foreground="{StaticResource WiltTextBrush}"
                                    FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
@@ -146,7 +146,7 @@
                 </Border>
 
                 <Border x:Name="MissedPanel" Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" Margin="0,0,0,8"
-                        HorizontalAlignment="Stretch" MinWidth="260" Visibility="Collapsed">
+                        HorizontalAlignment="Stretch" Width="280" Visibility="Collapsed">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Missed" Foreground="{StaticResource WiltTextDimBrush}" FontSize="11"
                                    Margin="2,0,0,6" />
@@ -155,7 +155,7 @@
                 </Border>
 
                 <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" HorizontalAlignment="Stretch"
-                        MinWidth="260" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
+                        Width="280" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Tasks:" Foreground="{StaticResource WiltTextBrush}" FontSize="13"
                                    FontWeight="SemiBold" Margin="2,0,0,8" />

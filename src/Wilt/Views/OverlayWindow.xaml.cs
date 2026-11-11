@@ -598,7 +598,7 @@ public partial class OverlayWindow : Window
             FontSize = 12,
             FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal,
             VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.Wrap,
         };
         if (task.IsDone)
         {
@@ -622,6 +622,7 @@ public partial class OverlayWindow : Window
             Style = (Style)FindResource("WiltIconButton"),
             ToolTip = isActive && _taskEngine.IsActiveRunning ? "Pause" : "Start",
             IsEnabled = !task.IsDone,
+            VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, 0, 0, 0),
         };
         startPauseButton.Click += (_, _) =>
@@ -644,6 +645,7 @@ public partial class OverlayWindow : Window
             Style = (Style)FindResource("WiltIconButton"),
             ToolTip = "Finish",
             IsEnabled = !task.IsDone,
+            VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, 0, 0, 0),
         };
         finishButton.Click += (_, _) => _taskEngine.FinishTask(task.Id);
@@ -686,7 +688,7 @@ public partial class OverlayWindow : Window
             Foreground = (Brush)FindResource("WiltTextBrush"),
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.Wrap,
         };
         Grid.SetColumn(nameText, 0);
         grid.Children.Add(nameText);
