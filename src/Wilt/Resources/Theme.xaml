@@ -66,18 +66,24 @@
          Settings/Task Manager are plain light windows where this dark-glass
          thumb color would be barely visible, so it's applied explicitly via
          TaskListScroll's own Resources instead of app-wide. -->
+    <SolidColorBrush x:Key="WiltScrollThumbBrush" Color="#30FFFFFF" />
+
     <Style x:Key="WiltScrollBarThumb" TargetType="Thumb">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border Background="{StaticResource WiltCapsuleBorderBrush}" CornerRadius="3" />
+                    <Border Background="{StaticResource WiltScrollThumbBrush}" CornerRadius="1.5"
+                            Margin="3,0,1,0" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
+    <!-- The clickable hit area (Width) stays wide enough to grab with a
+         mouse; the Thumb's own Margin above draws it as a slim 3px line
+         within that area instead of a bold pill. -->
     <Style x:Key="WiltScrollBar" TargetType="ScrollBar">
-        <Setter Property="Width" Value="6" />
+        <Setter Property="Width" Value="10" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
@@ -101,7 +107,7 @@
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
-                <Setter Property="Height" Value="6" />
+                <Setter Property="Height" Value="10" />
             </Trigger>
         </Style.Triggers>
     </Style>
