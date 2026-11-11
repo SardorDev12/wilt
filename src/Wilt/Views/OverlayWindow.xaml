@@ -162,6 +162,9 @@
 
                         <!-- Capped at 5 visible rows; a longer list scrolls instead of growing the window. -->
                         <ScrollViewer x:Name="TaskListScroll" MaxHeight="165" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource WiltScrollBar}" />
+                            </ScrollViewer.Resources>
                             <StackPanel x:Name="TaskRowsPanel" Orientation="Vertical" />
                         </ScrollViewer>
 

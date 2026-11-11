@@ -60,6 +60,52 @@
         </Setter>
     </Style>
 
+    <!-- Thin, theme-colored scrollbar for the overlay's Task list - no arrow
+         buttons, just a track and a slim thumb, instead of Windows' default
+         wide chrome scrollbar. Keyed rather than a global TargetType style:
+         Settings/Task Manager are plain light windows where this dark-glass
+         thumb color would be barely visible, so it's applied explicitly via
+         TaskListScroll's own Resources instead of app-wide. -->
+    <Style x:Key="WiltScrollBarThumb" TargetType="Thumb">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="{StaticResource WiltCapsuleBorderBrush}" CornerRadius="3" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="WiltScrollBar" TargetType="ScrollBar">
+        <Setter Property="Width" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="Transparent">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource WiltScrollBarThumb}" />
+                            </Track.Thumb>
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto" />
+                <Setter Property="Height" Value="6" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Dark, theme-matching text field (WPF's default TextBox renders a
          plain white box, which clashes hard against this dark glass UI and
          was hard to tell apart from its neighbor without a label). -->
