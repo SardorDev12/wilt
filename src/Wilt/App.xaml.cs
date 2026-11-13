@@ -45,7 +45,7 @@ public partial class App : Application
         _hotkeyService = new HotkeyService(_overlayWindow, timerEngine);
         _hotkeyService.Initialize(settings);
 
-        _idleDetectionService = new IdleDetectionService(timerEngine)
+        _idleDetectionService = new IdleDetectionService(timerEngine, taskEngine)
         {
             Enabled = settings.IdleDetectionEnabled,
             Timeout = TimeSpan.FromMinutes(settings.IdleTimeoutMinutes),
