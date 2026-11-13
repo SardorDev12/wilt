@@ -58,17 +58,23 @@
                 </StackPanel>
             </Border>
 
-            <StackPanel x:Name="PomodoroModeHost" Orientation="Vertical" HorizontalAlignment="Center">
-                <!-- Shown once a phase's time runs out, while the clock keeps counting
-                     into overtime instead of freezing - makes the moment hard to miss
-                     without silently starting the next phase on its own. -->
-                <Border x:Name="CompletionBanner" Style="{StaticResource WiltCapsuleBorder}"
-                        BorderBrush="{StaticResource WiltAccentBrush}" Padding="10,5" Margin="0,0,0,8"
-                        HorizontalAlignment="Center" Visibility="Collapsed">
-                    <TextBlock x:Name="CompletionBannerText" Text="Focus session complete!"
-                               Foreground="{StaticResource WiltTextBrush}" FontSize="12" FontWeight="SemiBold" />
-                </Border>
+            <!-- Shown once a phase's time runs out, while the clock keeps counting
+                 into overtime instead of freezing - makes the moment hard to miss
+                 without silently starting the next phase on its own. A sibling of
+                 both mode hosts (not nested in PomodoroModeHost) because the
+                 Pomodoro timer can keep running in the background - started from
+                 the tray or a hotkey - while Task Mode is the one currently shown,
+                 and the completion still needs to surface either way. -->
+            <Border x:Name="CompletionBanner" Style="{StaticResource WiltCapsuleBorder}"
+                    BorderBrush="{StaticResource WiltAccentBrush}" Padding="10,5" Margin="0,0,0,8"
+                    HorizontalAlignment="Center" Visibility="Collapsed" Cursor="Hand"
+                    MouseLeftButtonUp="OnCompletionBannerClick"
+                    ToolTip="Click to start the next phase">
+                <TextBlock x:Name="CompletionBannerText" Text="Focus session complete!"
+                           Foreground="{StaticResource WiltTextBrush}" FontSize="12" FontWeight="SemiBold" />
+            </Border>
 
+            <StackPanel x:Name="PomodoroModeHost" Orientation="Vertical" HorizontalAlignment="Center">
                 <!-- Character (draggable) with the session-progress ring beside it. Both
                      poses are always in the tree; only the selected one is visible/active
                      (PRD-inspired "Could have": alternate poses, user-selectable in Settings).

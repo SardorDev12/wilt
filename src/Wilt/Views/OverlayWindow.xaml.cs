@@ -377,6 +377,12 @@ public partial class OverlayWindow : Window
 
     private void OnPlayPauseClick(object sender, RoutedEventArgs e) => _timerEngine.TogglePauseResume();
 
+    // The banner shows even while Task Mode is the active view (the Pomodoro
+    // timer can be running in the background via tray/hotkey), where
+    // BigStartButton isn't reachable - clicking the banner itself
+    // acknowledges the completed phase and starts the next one.
+    private void OnCompletionBannerClick(object sender, MouseButtonEventArgs e) => _timerEngine.TogglePauseResume();
+
     private void OnFinishClick(object sender, RoutedEventArgs e)
     {
         if (_timerEngine.Progress01 < 0.15)
