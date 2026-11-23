@@ -399,7 +399,16 @@ public partial class OverlayWindow : Window
         _resizingTaskList = true;
         _taskListResizeStartMouse = e.GetPosition(this);
         _taskListResizeStartHeight = TaskListScroll.MaxHeight;
-        TaskListResizeHandle.CaptureMouse();
+
+        // Capture on the whole window, not just the 18px handle - the cursor
+        // moving outside the handle's own tiny bounds is normal and expected
+        // for a vertical drag, and capture on the small element alone wasn't
+        // reliably keeping events routed once that happened. Preview
+        // handlers are attached only for the duration of the drag so they
+        // don't intercept unrelated mouse activity the rest of the time.
+        Mouse.Capture(this, CaptureMode.SubTree);
+        PreviewMouseMove += OnTaskListResizeMouseMove;
+        PreviewMouseLeftButtonUp += OnTaskListResizeMouseUp;
         e.Handled = true;
     }
 
@@ -438,7 +447,9 @@ public partial class OverlayWindow : Window
         }
 
         _resizingTaskList = false;
-        TaskListResizeHandle.ReleaseMouseCapture();
+        PreviewMouseMove -= OnTaskListResizeMouseMove;
+        PreviewMouseLeftButtonUp -= OnTaskListResizeMouseUp;
+        ReleaseMouseCapture();
 
         if (!TaskListResizeHandle.IsMouseOver)
         {

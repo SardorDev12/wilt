@@ -34,12 +34,14 @@ public class TaskEngine
     }
 
     /// <summary>
-    /// Today's plan: every task whose [Date, EndDate] range includes today -
-    /// a multi-day/"weekly" task (planned across a date range in the Task
-    /// Manager window) reappears here on each of its days, not just once.
+    /// Today's plan: single-day tasks (Date == EndDate) scheduled for today.
+    /// A multi-day/"weekly" task spanning today does NOT appear here just
+    /// because its range includes today - it's deliberately pulled in via
+    /// "Move to today" (which collapses it to a single day), rather than
+    /// showing up on its own every day of its range.
     /// </summary>
     public IReadOnlyList<WorkTask> TodayTasks =>
-        _tasks.Where(t => t.Date.Date <= DateTime.Today && t.EndDate.Date >= DateTime.Today).ToList();
+        _tasks.Where(t => t.Date.Date == DateTime.Today && t.EndDate.Date == DateTime.Today).ToList();
 
     /// <summary>A task counts as missed only once its *whole* range has passed undone.</summary>
     public IReadOnlyList<WorkTask> MissedTasks =>
