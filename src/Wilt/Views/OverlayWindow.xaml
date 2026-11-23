@@ -220,7 +220,6 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="48" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Vertical" Margin="0,0,4,0">
@@ -232,16 +231,21 @@
                                              CommandManager.PreviewExecuted="OnMinutesPreviewExecuted" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Vertical" Margin="0,0,4,0">
-                                    <TextBlock Text="Start" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
-                                               Margin="2,0,0,3" />
-                                    <DatePicker x:Name="NewStartDatePicker" />
-                                </StackPanel>
+                                <!-- Editing/adding from Today is name+minutes only - this whole
+                                     group only shows on the This week tab, where the date range
+                                     is actually meaningful to set. -->
+                                <StackPanel x:Name="DateRangeFields" Grid.Column="1" Orientation="Horizontal">
+                                    <StackPanel Orientation="Vertical" Margin="0,0,4,0">
+                                        <TextBlock Text="Start" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
+                                                   Margin="2,0,0,3" />
+                                        <DatePicker x:Name="NewStartDatePicker" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Column="2" Orientation="Vertical">
-                                    <TextBlock Text="End" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
-                                               Margin="2,0,0,3" />
-                                    <DatePicker x:Name="NewEndDatePicker" ToolTip="Later than Start for a multi-day/weekly task" />
+                                    <StackPanel Orientation="Vertical">
+                                        <TextBlock Text="End" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
+                                                   Margin="2,0,0,3" />
+                                        <DatePicker x:Name="NewEndDatePicker" ToolTip="Later than Start for a multi-day/weekly task" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Grid>
 

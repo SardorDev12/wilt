@@ -43,6 +43,15 @@ public partial class OverlayWindow : Window
     /// <summary>Non-null while AddTaskForm is being used to edit an existing task rather than create a new one.</summary>
     private Guid? _editingTaskId;
 
+    /// <summary>
+    /// The task's actual schedule, captured when editing starts - used as-is
+    /// when editing from the Today tab (whose form hides the date pickers,
+    /// since Today editing is only ever name/minutes) instead of reading
+    /// stale picker values.
+    /// </summary>
+    private DateTime _editingOriginalStart;
+    private DateTime _editingOriginalEnd;
+
     // The currently-running task's row label, updated every tick (see
     // UpdateTaskClock) instead of waiting for the next full RenderTasks() -
     // TasksChanged only fires on explicit actions (start/pause/add/...), not
@@ -477,6 +486,8 @@ public partial class OverlayWindow : Window
     private void OnAddTaskRowClick(object sender, MouseButtonEventArgs e)
     {
         _editingTaskId = null;
+        _editingOriginalStart = DateTime.Today;
+        _editingOriginalEnd = DateTime.Today;
         ConfirmAddTaskButton.Content = "Add";
         NewTaskNameBox.Text = "";
         NewTaskMinutesBox.Text = "";
@@ -486,10 +497,17 @@ public partial class OverlayWindow : Window
         OpenAddTaskForm();
     }
 
-    /// <summary>Opens AddTaskForm pre-filled to edit an existing task instead of creating a new one.</summary>
+    /// <summary>
+    /// Opens AddTaskForm pre-filled to edit an existing task instead of
+    /// creating a new one. Editing from Today is name/minutes only (the
+    /// date pickers stay hidden - see OpenAddTaskForm); editing from This
+    /// week also includes the date range.
+    /// </summary>
     private void BeginEditTask(WorkTask task)
     {
         _editingTaskId = task.Id;
+        _editingOriginalStart = task.Date;
+        _editingOriginalEnd = task.EndDate;
         ConfirmAddTaskButton.Content = "Save";
         NewTaskNameBox.Text = task.Name;
         NewTaskMinutesBox.Text = task.PlannedMinutes.ToString();
@@ -503,6 +521,7 @@ public partial class OverlayWindow : Window
     {
         AddTaskRow.Visibility = Visibility.Collapsed;
         AddTaskForm.Visibility = Visibility.Visible;
+        DateRangeFields.Visibility = _showingThisWeek ? Visibility.Visible : Visibility.Collapsed;
 
         // The overlay is WS_EX_NOACTIVATE (PRD 10.2: never steals keyboard
         // focus from whatever app you're using) - great for a passive
@@ -585,8 +604,20 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        var startDate = NewStartDatePicker.SelectedDate ?? DateTime.Today;
-        var endDate = NewEndDatePicker.SelectedDate ?? startDate;
+        // The date pickers are hidden on the Today tab (editing/adding there
+        // is name/minutes only) - keep the task's existing schedule rather
+        // than reading values from controls the user never saw.
+        DateTime startDate, endDate;
+        if (_showingThisWeek)
+        {
+            startDate = NewStartDatePicker.SelectedDate ?? DateTime.Today;
+            endDate = NewEndDatePicker.SelectedDate ?? startDate;
+        }
+        else
+        {
+            startDate = _editingOriginalStart;
+            endDate = _editingOriginalEnd;
+        }
 
         if (_editingTaskId.HasValue)
         {
@@ -703,10 +734,11 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// One row, used for both the Today and This week tabs: name (with its
-    /// date range when it's a multi-day task) plus Edit, Start/Pause, and
-    /// Finish. No separate Done checkbox - Finish already marks a task done,
-    /// and Edit covers the rest (name, minutes, date range).
+    /// One row, used for both tabs: name (with its date range when it's a
+    /// multi-day task), an Edit icon, and then either Start/Pause + Finish
+    /// (Today - the one place you actually work a task) or just a "move to
+    /// today" icon (This week - a look-ahead/planning view). No separate
+    /// Done checkbox - Finish already marks a task done.
     /// </summary>
     private UIElement BuildTaskRow(WorkTask task, int number)
     {
@@ -755,41 +787,61 @@ public partial class OverlayWindow : Window
         Grid.SetColumn(editButton, 1);
         grid.Children.Add(editButton);
 
-        var startPauseButton = new Button
+        if (_showingThisWeek)
         {
-            Content = BuildPlayPauseIcon(isActive && _taskEngine.IsActiveRunning),
-            Style = (Style)FindResource("WiltIconButton"),
-            ToolTip = isActive && _taskEngine.IsActiveRunning ? "Pause" : "Start",
-            IsEnabled = !task.IsDone,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4, 0, 0, 0),
-        };
-        startPauseButton.Click += (_, _) =>
+            // This week is a planning/look-ahead view, not where you work a
+            // task - Start/Pause/Finish only make sense on Today, so the one
+            // other action here is pulling it onto today's actual plan.
+            var moveToTodayButton = new Button
+            {
+                Content = "↩",
+                Style = (Style)FindResource("WiltIconButton"),
+                ToolTip = "Move to today",
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(4, 0, 0, 0),
+            };
+            moveToTodayButton.Click += (_, _) => _taskEngine.MoveMissedToToday(task.Id);
+            Grid.SetColumn(moveToTodayButton, 2);
+            grid.Children.Add(moveToTodayButton);
+        }
+        else
         {
-            if (isActive && _taskEngine.IsActiveRunning)
+            var startPauseButton = new Button
             {
-                _taskEngine.PauseActive();
-            }
-            else
+                Content = BuildPlayPauseIcon(isActive && _taskEngine.IsActiveRunning),
+                Style = (Style)FindResource("WiltIconButton"),
+                ToolTip = isActive && _taskEngine.IsActiveRunning ? "Pause" : "Start",
+                IsEnabled = !task.IsDone,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(4, 0, 0, 0),
+            };
+            startPauseButton.Click += (_, _) =>
             {
-                _taskEngine.StartTask(task.Id);
-            }
-        };
-        Grid.SetColumn(startPauseButton, 2);
-        grid.Children.Add(startPauseButton);
+                if (isActive && _taskEngine.IsActiveRunning)
+                {
+                    _taskEngine.PauseActive();
+                }
+                else
+                {
+                    _taskEngine.StartTask(task.Id);
+                }
+            };
+            Grid.SetColumn(startPauseButton, 2);
+            grid.Children.Add(startPauseButton);
 
-        var finishButton = new Button
-        {
-            Content = "⏹",
-            Style = (Style)FindResource("WiltIconButton"),
-            ToolTip = "Finish",
-            IsEnabled = !task.IsDone,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4, 0, 0, 0),
-        };
-        finishButton.Click += (_, _) => _taskEngine.FinishTask(task.Id);
-        Grid.SetColumn(finishButton, 3);
-        grid.Children.Add(finishButton);
+            var finishButton = new Button
+            {
+                Content = "⏹",
+                Style = (Style)FindResource("WiltIconButton"),
+                ToolTip = "Finish",
+                IsEnabled = !task.IsDone,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(4, 0, 0, 0),
+            };
+            finishButton.Click += (_, _) => _taskEngine.FinishTask(task.Id);
+            Grid.SetColumn(finishButton, 3);
+            grid.Children.Add(finishButton);
+        }
 
         var row = new Border
         {
