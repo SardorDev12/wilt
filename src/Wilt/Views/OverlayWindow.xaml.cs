@@ -14,7 +14,6 @@ using Wilt.Native;
 using Wilt.Services;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
-using CheckBox = System.Windows.Controls.CheckBox;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -40,6 +39,9 @@ public partial class OverlayWindow : Window
 
     /// <summary>Which tab the single Task list is currently filtered to - Today (false) or This week (true).</summary>
     private bool _showingThisWeek;
+
+    /// <summary>Non-null while AddTaskForm is being used to edit an existing task rather than create a new one.</summary>
+    private Guid? _editingTaskId;
 
     // The currently-running task's row label, updated every tick (see
     // UpdateTaskClock) instead of waiting for the next full RenderTasks() -
@@ -361,10 +363,16 @@ public partial class OverlayWindow : Window
 
     // ----- Task list resize handle -----
 
+    /// <summary>
+    /// The shipped default task-list height, and the floor for dragging it -
+    /// the handle only grows the list taller than this, never shorter.
+    /// </summary>
+    private const double DefaultTaskListHeight = 165;
+
     private void OnTaskListResizeDragDelta(object sender, DragDeltaEventArgs e)
     {
         var newHeight = TaskListScroll.MaxHeight + e.VerticalChange;
-        TaskListScroll.MaxHeight = Math.Clamp(newHeight, 40, 500);
+        TaskListScroll.MaxHeight = Math.Clamp(newHeight, DefaultTaskListHeight, 600);
     }
 
     private void OnTaskListResizeDragCompleted(object sender, DragCompletedEventArgs e)
@@ -468,6 +476,31 @@ public partial class OverlayWindow : Window
 
     private void OnAddTaskRowClick(object sender, MouseButtonEventArgs e)
     {
+        _editingTaskId = null;
+        ConfirmAddTaskButton.Content = "Add";
+        NewTaskNameBox.Text = "";
+        NewTaskMinutesBox.Text = "";
+        NewStartDatePicker.SelectedDate = DateTime.Today;
+        NewEndDatePicker.SelectedDate = DateTime.Today;
+
+        OpenAddTaskForm();
+    }
+
+    /// <summary>Opens AddTaskForm pre-filled to edit an existing task instead of creating a new one.</summary>
+    private void BeginEditTask(WorkTask task)
+    {
+        _editingTaskId = task.Id;
+        ConfirmAddTaskButton.Content = "Save";
+        NewTaskNameBox.Text = task.Name;
+        NewTaskMinutesBox.Text = task.PlannedMinutes.ToString();
+        NewStartDatePicker.SelectedDate = task.Date;
+        NewEndDatePicker.SelectedDate = task.EndDate;
+
+        OpenAddTaskForm();
+    }
+
+    private void OpenAddTaskForm()
+    {
         AddTaskRow.Visibility = Visibility.Collapsed;
         AddTaskForm.Visibility = Visibility.Visible;
 
@@ -489,6 +522,8 @@ public partial class OverlayWindow : Window
         AddTaskRow.Visibility = Visibility.Visible;
         NewTaskNameBox.Text = "";
         NewTaskMinutesBox.Text = "";
+        _editingTaskId = null;
+        ConfirmAddTaskButton.Content = "Add";
         SetTextInputCapable(false);
     }
 
@@ -550,7 +585,19 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _taskEngine.AddTask(name, minutes);
+        var startDate = NewStartDatePicker.SelectedDate ?? DateTime.Today;
+        var endDate = NewEndDatePicker.SelectedDate ?? startDate;
+
+        if (_editingTaskId.HasValue)
+        {
+            var isDone = _taskEngine.AllTasks.FirstOrDefault(t => t.Id == _editingTaskId.Value)?.IsDone ?? false;
+            _taskEngine.UpdateTask(_editingTaskId.Value, name, minutes, startDate, endDate, isDone);
+        }
+        else
+        {
+            _taskEngine.AddTask(name, minutes, startDate, endDate);
+        }
+
         CloseAddTaskForm();
     }
 
@@ -584,12 +631,22 @@ public partial class OverlayWindow : Window
 
     private void OnTodayTabClick(object sender, RoutedEventArgs e)
     {
+        if (AddTaskForm.Visibility == Visibility.Visible)
+        {
+            CloseAddTaskForm();
+        }
+
         _showingThisWeek = false;
         RenderTasks();
     }
 
     private void OnThisWeekTabClick(object sender, RoutedEventArgs e)
     {
+        if (AddTaskForm.Visibility == Visibility.Visible)
+        {
+            CloseAddTaskForm();
+        }
+
         _showingThisWeek = true;
         RenderTasks();
     }
@@ -614,44 +671,23 @@ public partial class OverlayWindow : Window
         UpdateTaskClock();
         UpdateTaskListTabs();
 
-        // The quick "+ Add task" form always creates a plain, single-day
-        // (today) task - it only makes sense while looking at the Today tab.
-        // Weekly/ranged tasks are planned in the Task Manager window (Settings).
-        if (_showingThisWeek)
-        {
-            AddTaskForm.Visibility = Visibility.Collapsed;
-            AddTaskRow.Visibility = Visibility.Collapsed;
-        }
-        else if (AddTaskForm.Visibility != Visibility.Visible)
+        // "+ Add task" opens the same form either way - date range included -
+        // so it's available from both tabs now, just hidden while the form
+        // itself is already open.
+        if (AddTaskForm.Visibility != Visibility.Visible)
         {
             AddTaskRow.Visibility = Visibility.Visible;
         }
 
+        var tasks = _showingThisWeek ? _taskEngine.ThisWeekTasks : _taskEngine.TodayTasks;
+        NoTasksText.Text = _showingThisWeek ? "Nothing planned this week." : "No tasks yet today.";
+        NoTasksText.Visibility = tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        TaskListScroll.Visibility = tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
         TaskRowsPanel.Children.Clear();
-
-        if (_showingThisWeek)
+        for (var i = 0; i < tasks.Count; i++)
         {
-            var thisWeek = _taskEngine.ThisWeekTasks;
-            NoTasksText.Text = "Nothing planned this week.";
-            NoTasksText.Visibility = thisWeek.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            TaskListScroll.Visibility = thisWeek.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
-            foreach (var task in thisWeek)
-            {
-                TaskRowsPanel.Children.Add(BuildThisWeekRow(task));
-            }
-        }
-        else
-        {
-            var today = _taskEngine.TodayTasks;
-            NoTasksText.Text = "No tasks yet today.";
-            NoTasksText.Visibility = today.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            TaskListScroll.Visibility = today.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
-            for (var i = 0; i < today.Count; i++)
-            {
-                TaskRowsPanel.Children.Add(BuildTaskRow(today[i], i + 1));
-            }
+            TaskRowsPanel.Children.Add(BuildTaskRow(tasks[i], i + 1));
         }
 
         var missed = _taskEngine.MissedTasks;
@@ -667,65 +703,14 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// A compact, read-mostly row for the week-ahead list - just the date
-    /// range, name and a Done toggle. Start/pause/finish live only in the
-    /// Today list, which stays the one actionable place to actually work a
-    /// task.
+    /// One row, used for both the Today and This week tabs: name (with its
+    /// date range when it's a multi-day task) plus Edit, Start/Pause, and
+    /// Finish. No separate Done checkbox - Finish already marks a task done,
+    /// and Edit covers the rest (name, minutes, date range).
     /// </summary>
-    private UIElement BuildThisWeekRow(WorkTask task)
-    {
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var dateLabel = task.EndDate.Date > task.Date.Date
-            ? $"{task.Date:MMM d}–{task.EndDate:MMM d}"
-            : $"{task.Date:MMM d}";
-
-        var nameText = new TextBlock
-        {
-            Text = $"{dateLabel}: {task.Name}",
-            Foreground = (Brush)FindResource(task.IsDone ? "WiltTextDimBrush" : "WiltTextBrush"),
-            FontSize = 11,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
-        };
-        if (task.IsDone)
-        {
-            nameText.TextDecorations = TextDecorations.Strikethrough;
-        }
-
-        Grid.SetColumn(nameText, 0);
-        grid.Children.Add(nameText);
-
-        var doneCheck = new CheckBox
-        {
-            IsChecked = task.IsDone,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(6, 0, 0, 0),
-        };
-        doneCheck.Checked += (_, _) => _taskEngine.ToggleDone(task.Id);
-        doneCheck.Unchecked += (_, _) => _taskEngine.ToggleDone(task.Id);
-        Grid.SetColumn(doneCheck, 1);
-        grid.Children.Add(doneCheck);
-
-        var isInTodayToo = task.Date.Date <= DateTime.Today && task.EndDate.Date >= DateTime.Today;
-        var row = new Border
-        {
-            Background = (Brush)FindResource(isInTodayToo ? "WiltAccentDimBrush" : "WiltRowChipBrush"),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(8, 5, 6, 5),
-            Margin = new Thickness(0, 0, 0, 6),
-            Child = grid,
-        };
-        row.MouseLeftButtonDown += OnInteractiveRowMouseLeftButtonDown;
-        return row;
-    }
-
     private UIElement BuildTaskRow(WorkTask task, int number)
     {
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -756,12 +741,23 @@ public partial class OverlayWindow : Window
         }
 
         Grid.SetColumn(nameText, 0);
-        Grid.SetColumnSpan(nameText, 2);
         grid.Children.Add(nameText);
+
+        var editButton = new Button
+        {
+            Content = "✎",
+            Style = (Style)FindResource("WiltIconButton"),
+            ToolTip = "Edit",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        editButton.Click += (_, _) => BeginEditTask(task);
+        Grid.SetColumn(editButton, 1);
+        grid.Children.Add(editButton);
 
         var startPauseButton = new Button
         {
-            Content = isActive && _taskEngine.IsActiveRunning ? "⏸" : "▶",
+            Content = BuildPlayPauseIcon(isActive && _taskEngine.IsActiveRunning),
             Style = (Style)FindResource("WiltIconButton"),
             ToolTip = isActive && _taskEngine.IsActiveRunning ? "Pause" : "Start",
             IsEnabled = !task.IsDone,
@@ -794,17 +790,6 @@ public partial class OverlayWindow : Window
         finishButton.Click += (_, _) => _taskEngine.FinishTask(task.Id);
         Grid.SetColumn(finishButton, 3);
         grid.Children.Add(finishButton);
-
-        var doneCheck = new CheckBox
-        {
-            IsChecked = task.IsDone,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(6, 0, 0, 0),
-        };
-        doneCheck.Checked += (_, _) => _taskEngine.ToggleDone(task.Id);
-        doneCheck.Unchecked += (_, _) => _taskEngine.ToggleDone(task.Id);
-        Grid.SetColumn(doneCheck, 4);
-        grid.Children.Add(doneCheck);
 
         var row = new Border
         {
