@@ -523,6 +523,11 @@ public partial class OverlayWindow : Window
         AddTaskForm.Visibility = Visibility.Visible;
         DateRangeFields.Visibility = _showingThisWeek ? Visibility.Visible : Visibility.Collapsed;
 
+        // On Today, Minutes is the only field sharing that row (the date
+        // pickers are hidden) - give it the room instead of leaving it
+        // narrow with blank space beside it.
+        NewTaskMinutesBox.Width = _showingThisWeek ? 60 : 160;
+
         // The overlay is WS_EX_NOACTIVATE (PRD 10.2: never steals keyboard
         // focus from whatever app you're using) - great for a passive
         // character, but it means the window can never actually become the

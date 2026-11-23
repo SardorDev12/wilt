@@ -184,12 +184,18 @@
                             <StackPanel x:Name="TaskRowsPanel" Orientation="Vertical" />
                         </ScrollViewer>
 
+                        <!-- Background must be near-invisible rather than literally Transparent:
+                             this is a per-pixel-alpha layered window, so a truly zero-alpha
+                             area never receives mouse input at the OS level at all - only the
+                             thin visible pill below was actually draggable, which is why
+                             resizing felt like it only ever shrank (most drags missed the real
+                             hit area and fell through to the window's own drag-to-move). -->
                         <Thumb x:Name="TaskListResizeHandle" Height="10" Margin="0,2,0,2" Cursor="SizeNS"
-                               Background="Transparent" DragDelta="OnTaskListResizeDragDelta"
+                               Background="#01000000" DragDelta="OnTaskListResizeDragDelta"
                                DragCompleted="OnTaskListResizeDragCompleted" ToolTip="Drag to resize the task list">
                             <Thumb.Template>
                                 <ControlTemplate TargetType="Thumb">
-                                    <Border Background="Transparent">
+                                    <Border Background="#01000000">
                                         <Border Width="28" Height="3" CornerRadius="1.5" HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
                                                 Background="{StaticResource WiltCapsuleBorderBrush}" />
@@ -218,14 +224,14 @@
 
                             <Grid Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="48" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Vertical" Margin="0,0,4,0">
                                     <TextBlock Text="Min" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
                                                Margin="2,0,0,3" />
-                                    <TextBox x:Name="NewTaskMinutesBox" Style="{StaticResource WiltTextBox}"
+                                    <TextBox x:Name="NewTaskMinutesBox" Width="60" Style="{StaticResource WiltTextBox}"
                                              ToolTip="Planned minutes" MaxLength="4" KeyDown="OnAddTaskFieldKeyDown"
                                              PreviewTextInput="OnMinutesPreviewTextInput"
                                              CommandManager.PreviewExecuted="OnMinutesPreviewExecuted" />
@@ -234,17 +240,19 @@
                                 <!-- Editing/adding from Today is name+minutes only - this whole
                                      group only shows on the This week tab, where the date range
                                      is actually meaningful to set. -->
-                                <StackPanel x:Name="DateRangeFields" Grid.Column="1" Orientation="Horizontal">
-                                    <StackPanel Orientation="Vertical" Margin="0,0,4,0">
+                                <StackPanel x:Name="DateRangeFields" Grid.Column="1" Orientation="Horizontal"
+                                            HorizontalAlignment="Right">
+                                    <StackPanel Orientation="Vertical" Width="90" Margin="0,0,6,0">
                                         <TextBlock Text="Start" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
                                                    Margin="2,0,0,3" />
-                                        <DatePicker x:Name="NewStartDatePicker" />
+                                        <DatePicker x:Name="NewStartDatePicker" Width="90" />
                                     </StackPanel>
 
-                                    <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Vertical" Width="90">
                                         <TextBlock Text="End" FontSize="10" Foreground="{StaticResource WiltTextDimBrush}"
                                                    Margin="2,0,0,3" />
-                                        <DatePicker x:Name="NewEndDatePicker" ToolTip="Later than Start for a multi-day/weekly task" />
+                                        <DatePicker x:Name="NewEndDatePicker" Width="90"
+                                                    ToolTip="Later than Start for a multi-day/weekly task" />
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
