@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -371,31 +370,52 @@ public partial class OverlayWindow : Window
     }
 
     // ----- Task list resize handle -----
+    //
+    // Driven directly off mouse capture/move rather than a Thumb's built-in
+    // DragDelta, which never reliably engaged in this layered window.
 
     /// <summary>The shipped default task-list height.</summary>
     private const double DefaultTaskListHeight = 165;
 
-    /// <summary>The height when the current drag gesture began - the floor for that gesture, so it can only grow, never shrink back down.</summary>
-    private double _taskListDragStartHeight;
+    private bool _resizingTaskList;
+    private Point _taskListResizeStartMouse;
+    private double _taskListResizeStartHeight;
 
-    private void OnTaskListResizeDragStarted(object sender, DragStartedEventArgs e)
+    private void OnTaskListResizeMouseDown(object sender, MouseButtonEventArgs e)
     {
-        _taskListDragStartHeight = TaskListScroll.MaxHeight;
+        _resizingTaskList = true;
+        _taskListResizeStartMouse = e.GetPosition(this);
+        _taskListResizeStartHeight = TaskListScroll.MaxHeight;
+        TaskListResizeHandle.CaptureMouse();
+        e.Handled = true;
     }
 
-    private void OnTaskListResizeDragDelta(object sender, DragDeltaEventArgs e)
+    private void OnTaskListResizeMouseMove(object sender, MouseEventArgs e)
     {
+        if (!_resizingTaskList)
+        {
+            return;
+        }
+
+        var delta = e.GetPosition(this).Y - _taskListResizeStartMouse.Y;
+
         // The floor is wherever the list already was when this drag started
-        // (itself never below the shipped default) - not a fixed constant,
-        // which let a later drag shrink an already-grown list back down to
-        // that constant. This way it only ever grows, never shrinks.
-        var floor = Math.Max(DefaultTaskListHeight, _taskListDragStartHeight);
-        var newHeight = TaskListScroll.MaxHeight + e.VerticalChange;
-        TaskListScroll.MaxHeight = Math.Clamp(newHeight, floor, 600);
+        // (itself never below the shipped default) - so it only ever grows
+        // from here, never shrinks back down.
+        var floor = Math.Max(DefaultTaskListHeight, _taskListResizeStartHeight);
+        TaskListScroll.MaxHeight = Math.Clamp(_taskListResizeStartHeight + delta, floor, 600);
     }
 
-    private void OnTaskListResizeDragCompleted(object sender, DragCompletedEventArgs e)
+    private void OnTaskListResizeMouseUp(object sender, MouseButtonEventArgs e)
     {
+        if (!_resizingTaskList)
+        {
+            return;
+        }
+
+        _resizingTaskList = false;
+        TaskListResizeHandle.ReleaseMouseCapture();
+
         var settings = _settingsService.Current.Clone();
         settings.TaskListHeight = TaskListScroll.MaxHeight;
         _settingsService.Save(settings);
@@ -504,14 +524,18 @@ public partial class OverlayWindow : Window
         NewStartDatePicker.SelectedDate = DateTime.Today;
         NewEndDatePicker.SelectedDate = DateTime.Today;
 
-        OpenAddTaskForm();
+        // Creating a new task from This week can set a date range up front;
+        // creating one from Today is always just today, so there's nothing
+        // to show. Editing never shows the date range - see BeginEditTask.
+        OpenAddTaskForm(showDateRange: _showingThisWeek);
     }
 
     /// <summary>
     /// Opens AddTaskForm pre-filled to edit an existing task instead of
-    /// creating a new one. Editing from Today is name/minutes only (the
-    /// date pickers stay hidden - see OpenAddTaskForm); editing from This
-    /// week also includes the date range.
+    /// creating a new one. Always name/minutes only - a multi-day task's
+    /// date range is set when it's created and isn't re-edited here; to
+    /// delete a task outright use the Delete icon in the This week list, or
+    /// the Task Manager window (Settings) for full control.
     /// </summary>
     private void BeginEditTask(WorkTask task)
     {
@@ -521,22 +545,20 @@ public partial class OverlayWindow : Window
         ConfirmAddTaskButton.Content = "Save";
         NewTaskNameBox.Text = task.Name;
         NewTaskMinutesBox.Text = task.PlannedMinutes.ToString();
-        NewStartDatePicker.SelectedDate = task.Date;
-        NewEndDatePicker.SelectedDate = task.EndDate;
 
-        OpenAddTaskForm();
+        OpenAddTaskForm(showDateRange: false);
     }
 
-    private void OpenAddTaskForm()
+    private void OpenAddTaskForm(bool showDateRange)
     {
         AddTaskRow.Visibility = Visibility.Collapsed;
         AddTaskForm.Visibility = Visibility.Visible;
-        DateRangeFields.Visibility = _showingThisWeek ? Visibility.Visible : Visibility.Collapsed;
+        DateRangeFields.Visibility = showDateRange ? Visibility.Visible : Visibility.Collapsed;
 
-        // On Today, Minutes is the only field sharing that row (the date
-        // pickers are hidden) - give it the room instead of leaving it
-        // narrow with blank space beside it.
-        NewTaskMinutesBox.Width = _showingThisWeek ? 60 : 160;
+        // When the date pickers are hidden, Minutes is the only field
+        // sharing that row - give it the room instead of leaving it narrow
+        // with blank space beside it.
+        NewTaskMinutesBox.Width = showDateRange ? 50 : 160;
 
         // The overlay is WS_EX_NOACTIVATE (PRD 10.2: never steals keyboard
         // focus from whatever app you're using) - great for a passive
@@ -619,19 +641,25 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        // The date pickers are hidden on the Today tab (editing/adding there
-        // is name/minutes only) - keep the task's existing schedule rather
-        // than reading values from controls the user never saw.
+        // Editing never shows the date pickers (BeginEditTask) - keep the
+        // task's existing schedule rather than reading values from controls
+        // the user never saw. Creating a new task reads them only when
+        // they're actually visible (This week tab); otherwise it's today.
         DateTime startDate, endDate;
-        if (_showingThisWeek)
+        if (_editingTaskId.HasValue)
+        {
+            startDate = _editingOriginalStart;
+            endDate = _editingOriginalEnd;
+        }
+        else if (DateRangeFields.Visibility == Visibility.Visible)
         {
             startDate = NewStartDatePicker.SelectedDate ?? DateTime.Today;
             endDate = NewEndDatePicker.SelectedDate ?? startDate;
         }
         else
         {
-            startDate = _editingOriginalStart;
-            endDate = _editingOriginalEnd;
+            startDate = DateTime.Today;
+            endDate = DateTime.Today;
         }
 
         if (_editingTaskId.HasValue)
@@ -805,8 +833,9 @@ public partial class OverlayWindow : Window
         if (_showingThisWeek)
         {
             // This week is a planning/look-ahead view, not where you work a
-            // task - Start/Pause/Finish only make sense on Today, so the one
-            // other action here is pulling it onto today's actual plan.
+            // task - Start/Pause/Finish only make sense on Today. The other
+            // actions here are pulling it onto today's actual plan, or
+            // deleting it outright if it was a mistake.
             var moveToTodayButton = new Button
             {
                 Content = "↩",
@@ -818,6 +847,18 @@ public partial class OverlayWindow : Window
             moveToTodayButton.Click += (_, _) => _taskEngine.MoveMissedToToday(task.Id);
             Grid.SetColumn(moveToTodayButton, 2);
             grid.Children.Add(moveToTodayButton);
+
+            var deleteButton = new Button
+            {
+                Content = "✕",
+                Style = (Style)FindResource("WiltIconButton"),
+                ToolTip = "Delete",
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(4, 0, 0, 0),
+            };
+            deleteButton.Click += (_, _) => _taskEngine.DeleteTask(task.Id);
+            Grid.SetColumn(deleteButton, 3);
+            grid.Children.Add(deleteButton);
         }
         else
         {
