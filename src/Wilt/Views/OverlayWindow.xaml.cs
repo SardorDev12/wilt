@@ -521,8 +521,21 @@ public partial class OverlayWindow : Window
         ConfirmAddTaskButton.Content = "Add";
         NewTaskNameBox.Text = "";
         NewTaskMinutesBox.Text = "";
-        NewStartDatePicker.SelectedDate = DateTime.Today;
-        NewEndDatePicker.SelectedDate = DateTime.Today;
+
+        // Creating from This week defaults to a task spanning the whole
+        // current week (Monday-Sunday) - the common case there - rather
+        // than both dates starting collapsed to today.
+        if (_showingThisWeek)
+        {
+            var (weekStart, weekEnd) = TaskEngine.CurrentWeekRange();
+            NewStartDatePicker.SelectedDate = weekStart;
+            NewEndDatePicker.SelectedDate = weekEnd;
+        }
+        else
+        {
+            NewStartDatePicker.SelectedDate = DateTime.Today;
+            NewEndDatePicker.SelectedDate = DateTime.Today;
+        }
 
         // Creating a new task from This week can set a date range up front;
         // creating one from Today is always just today, so there's nothing

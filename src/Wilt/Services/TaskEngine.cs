@@ -61,7 +61,8 @@ public class TaskEngine
         }
     }
 
-    private static (DateTime Start, DateTime End) CurrentWeekRange()
+    /// <summary>Monday through Sunday of the week containing today.</summary>
+    public static (DateTime Start, DateTime End) CurrentWeekRange()
     {
         var today = DateTime.Today;
         var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
