@@ -45,6 +45,30 @@ public class TaskEngine
     public IReadOnlyList<WorkTask> MissedTasks =>
         _tasks.Where(t => t.EndDate.Date < DateTime.Today && !t.IsDone).ToList();
 
+    /// <summary>
+    /// Every task whose range overlaps the current week (Monday-Sunday
+    /// containing today) - a plan-ahead view alongside the actionable
+    /// Today list, oldest start date first.
+    /// </summary>
+    public IReadOnlyList<WorkTask> ThisWeekTasks
+    {
+        get
+        {
+            var (weekStart, weekEnd) = CurrentWeekRange();
+            return _tasks.Where(t => t.Date.Date <= weekEnd && t.EndDate.Date >= weekStart)
+                .OrderBy(t => t.Date)
+                .ToList();
+        }
+    }
+
+    private static (DateTime Start, DateTime End) CurrentWeekRange()
+    {
+        var today = DateTime.Today;
+        var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
+        var start = today.AddDays(-daysSinceMonday);
+        return (start, start.AddDays(6));
+    }
+
     public WorkTask? ActiveTask => ActiveTaskId.HasValue ? _tasks.FirstOrDefault(t => t.Id == ActiveTaskId.Value) : null;
 
     /// <summary>Every task regardless of date, newest first - for the Task Manager window (Settings).</summary>

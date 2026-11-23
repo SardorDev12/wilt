@@ -607,6 +607,72 @@ public partial class OverlayWindow : Window
         {
             MissedRowsPanel.Children.Add(BuildMissedRow(task));
         }
+
+        var thisWeek = _taskEngine.ThisWeekTasks;
+        NoThisWeekText.Visibility = thisWeek.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ThisWeekScroll.Visibility = thisWeek.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+        ThisWeekRowsPanel.Children.Clear();
+        foreach (var task in thisWeek)
+        {
+            ThisWeekRowsPanel.Children.Add(BuildThisWeekRow(task));
+        }
+    }
+
+    /// <summary>
+    /// A compact, read-mostly row for the week-ahead list - just the date
+    /// range, name and a Done toggle. Start/pause/finish live only in the
+    /// Today list, which stays the one actionable place to actually work a
+    /// task.
+    /// </summary>
+    private UIElement BuildThisWeekRow(WorkTask task)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var dateLabel = task.EndDate.Date > task.Date.Date
+            ? $"{task.Date:MMM d}–{task.EndDate:MMM d}"
+            : $"{task.Date:MMM d}";
+
+        var nameText = new TextBlock
+        {
+            Text = $"{dateLabel}: {task.Name}",
+            Foreground = (Brush)FindResource(task.IsDone ? "WiltTextDimBrush" : "WiltTextBrush"),
+            FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        if (task.IsDone)
+        {
+            nameText.TextDecorations = TextDecorations.Strikethrough;
+        }
+
+        Grid.SetColumn(nameText, 0);
+        grid.Children.Add(nameText);
+
+        var doneCheck = new CheckBox
+        {
+            IsChecked = task.IsDone,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0),
+        };
+        doneCheck.Checked += (_, _) => _taskEngine.ToggleDone(task.Id);
+        doneCheck.Unchecked += (_, _) => _taskEngine.ToggleDone(task.Id);
+        Grid.SetColumn(doneCheck, 1);
+        grid.Children.Add(doneCheck);
+
+        var isInTodayToo = task.Date.Date <= DateTime.Today && task.EndDate.Date >= DateTime.Today;
+        var row = new Border
+        {
+            Background = (Brush)FindResource(isInTodayToo ? "WiltAccentDimBrush" : "WiltRowChipBrush"),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(8, 5, 6, 5),
+            Margin = new Thickness(0, 0, 0, 6),
+            Child = grid,
+        };
+        row.MouseLeftButtonDown += OnInteractiveRowMouseLeftButtonDown;
+        return row;
     }
 
     private UIElement BuildTaskRow(WorkTask task, int number)
