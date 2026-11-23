@@ -191,7 +191,8 @@
                              resizing felt like it only ever shrank (most drags missed the real
                              hit area and fell through to the window's own drag-to-move). -->
                         <Thumb x:Name="TaskListResizeHandle" Height="10" Margin="0,2,0,2" Cursor="SizeNS"
-                               Background="#01000000" DragDelta="OnTaskListResizeDragDelta"
+                               Background="#01000000" DragStarted="OnTaskListResizeDragStarted"
+                               DragDelta="OnTaskListResizeDragDelta"
                                DragCompleted="OnTaskListResizeDragCompleted" ToolTip="Drag to resize the task list">
                             <Thumb.Template>
                                 <ControlTemplate TargetType="Thumb">

@@ -372,16 +372,26 @@ public partial class OverlayWindow : Window
 
     // ----- Task list resize handle -----
 
-    /// <summary>
-    /// The shipped default task-list height, and the floor for dragging it -
-    /// the handle only grows the list taller than this, never shorter.
-    /// </summary>
+    /// <summary>The shipped default task-list height.</summary>
     private const double DefaultTaskListHeight = 165;
+
+    /// <summary>The height when the current drag gesture began - the floor for that gesture, so it can only grow, never shrink back down.</summary>
+    private double _taskListDragStartHeight;
+
+    private void OnTaskListResizeDragStarted(object sender, DragStartedEventArgs e)
+    {
+        _taskListDragStartHeight = TaskListScroll.MaxHeight;
+    }
 
     private void OnTaskListResizeDragDelta(object sender, DragDeltaEventArgs e)
     {
+        // The floor is wherever the list already was when this drag started
+        // (itself never below the shipped default) - not a fixed constant,
+        // which let a later drag shrink an already-grown list back down to
+        // that constant. This way it only ever grows, never shrinks.
+        var floor = Math.Max(DefaultTaskListHeight, _taskListDragStartHeight);
         var newHeight = TaskListScroll.MaxHeight + e.VerticalChange;
-        TaskListScroll.MaxHeight = Math.Clamp(newHeight, DefaultTaskListHeight, 600);
+        TaskListScroll.MaxHeight = Math.Clamp(newHeight, floor, 600);
     }
 
     private void OnTaskListResizeDragCompleted(object sender, DragCompletedEventArgs e)
