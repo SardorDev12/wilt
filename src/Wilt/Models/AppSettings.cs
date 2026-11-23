@@ -36,6 +36,14 @@ public class AppSettings
 
     public double OverlayScale { get; set; } = 1.0; // 0.2 .. 8.0, base ~150px tall at 1.0
     public double OverlayOpacity { get; set; } = 1.0; // 0.2 .. 1.0
+
+    /// <summary>
+    /// How tall the Task Mode list's scrollable row area is, in DIPs (drag
+    /// handle below the list) - independent of OverlayScale, which scales
+    /// everything uniformly. The shipped default (enough for ~5 rows) is
+    /// unaffected by this; it only changes once a user actually drags it.
+    /// </summary>
+    public double TaskListHeight { get; set; } = 165;
     public bool ClickThrough { get; set; } = false;
     public bool SoundEnabled { get; set; } = true;
     public bool LaunchOnStartup { get; set; } = false;

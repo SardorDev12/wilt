@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -103,6 +104,7 @@ public partial class OverlayWindow : Window
         OverlayScaleTransform.ScaleX = settings.OverlayScale;
         OverlayScaleTransform.ScaleY = settings.OverlayScale;
         Opacity = settings.OverlayOpacity;
+        TaskListScroll.MaxHeight = settings.TaskListHeight;
 
         SwitchPose(settings.Pose);
         _activeCharacter.Skin = settings.Skin;
@@ -352,6 +354,21 @@ public partial class OverlayWindow : Window
                 // DragMove throws if called outside a button-down; safe to ignore.
             }
         }
+    }
+
+    // ----- Task list resize handle -----
+
+    private void OnTaskListResizeDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        var newHeight = TaskListScroll.MaxHeight + e.VerticalChange;
+        TaskListScroll.MaxHeight = Math.Clamp(newHeight, 40, 500);
+    }
+
+    private void OnTaskListResizeDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        var settings = _settingsService.Current.Clone();
+        settings.TaskListHeight = TaskListScroll.MaxHeight;
+        _settingsService.Save(settings);
     }
 
     // ----- Hover control strip (PRD 9.1) -----
