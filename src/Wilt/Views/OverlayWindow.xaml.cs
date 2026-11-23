@@ -38,6 +38,9 @@ public partial class OverlayWindow : Window
     private ClickThroughIndicatorWindow? _clickThroughIndicator;
     private bool _missedPanelOpen;
 
+    /// <summary>Which tab the single Task list is currently filtered to - Today (false) or This week (true).</summary>
+    private bool _showingThisWeek;
+
     // The currently-running task's row label, updated every tick (see
     // UpdateTaskClock) instead of waiting for the next full RenderTasks() -
     // TasksChanged only fires on explicit actions (start/pause/add/...), not
@@ -579,25 +582,79 @@ public partial class OverlayWindow : Window
         }
     }
 
+    private void OnTodayTabClick(object sender, RoutedEventArgs e)
+    {
+        _showingThisWeek = false;
+        RenderTasks();
+    }
+
+    private void OnThisWeekTabClick(object sender, RoutedEventArgs e)
+    {
+        _showingThisWeek = true;
+        RenderTasks();
+    }
+
+    private void UpdateTaskListTabs()
+    {
+        var activeBg = (Brush)FindResource("WiltAccentBrush");
+        var activeFg = (Brush)FindResource("WiltTextBrush");
+        var inactiveFg = (Brush)FindResource("WiltTextDimBrush");
+
+        TodayTabButton.Background = _showingThisWeek ? Brushes.Transparent : activeBg;
+        TodayTabButton.Foreground = _showingThisWeek ? inactiveFg : activeFg;
+        ThisWeekTabButton.Background = _showingThisWeek ? activeBg : Brushes.Transparent;
+        ThisWeekTabButton.Foreground = _showingThisWeek ? activeFg : inactiveFg;
+    }
+
     private void RenderTasks()
     {
         _activeTaskRowText = null;
         _activeTaskRowTask = null;
 
         UpdateTaskClock();
+        UpdateTaskListTabs();
 
-        var today = _taskEngine.TodayTasks;
-        var missed = _taskEngine.MissedTasks;
-
-        NoTasksText.Visibility = today.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        TaskListScroll.Visibility = today.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
-        TaskRowsPanel.Children.Clear();
-        for (var i = 0; i < today.Count; i++)
+        // The quick "+ Add task" form always creates a plain, single-day
+        // (today) task - it only makes sense while looking at the Today tab.
+        // Weekly/ranged tasks are planned in the Task Manager window (Settings).
+        if (_showingThisWeek)
         {
-            TaskRowsPanel.Children.Add(BuildTaskRow(today[i], i + 1));
+            AddTaskForm.Visibility = Visibility.Collapsed;
+            AddTaskRow.Visibility = Visibility.Collapsed;
+        }
+        else if (AddTaskForm.Visibility != Visibility.Visible)
+        {
+            AddTaskRow.Visibility = Visibility.Visible;
         }
 
+        TaskRowsPanel.Children.Clear();
+
+        if (_showingThisWeek)
+        {
+            var thisWeek = _taskEngine.ThisWeekTasks;
+            NoTasksText.Text = "Nothing planned this week.";
+            NoTasksText.Visibility = thisWeek.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            TaskListScroll.Visibility = thisWeek.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+            foreach (var task in thisWeek)
+            {
+                TaskRowsPanel.Children.Add(BuildThisWeekRow(task));
+            }
+        }
+        else
+        {
+            var today = _taskEngine.TodayTasks;
+            NoTasksText.Text = "No tasks yet today.";
+            NoTasksText.Visibility = today.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            TaskListScroll.Visibility = today.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
+            for (var i = 0; i < today.Count; i++)
+            {
+                TaskRowsPanel.Children.Add(BuildTaskRow(today[i], i + 1));
+            }
+        }
+
+        var missed = _taskEngine.MissedTasks;
         MissedBadgeHost.Visibility = missed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         MissedCountText.Text = missed.Count.ToString();
 
@@ -606,16 +663,6 @@ public partial class OverlayWindow : Window
         foreach (var task in missed)
         {
             MissedRowsPanel.Children.Add(BuildMissedRow(task));
-        }
-
-        var thisWeek = _taskEngine.ThisWeekTasks;
-        NoThisWeekText.Visibility = thisWeek.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ThisWeekScroll.Visibility = thisWeek.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
-        ThisWeekRowsPanel.Children.Clear();
-        foreach (var task in thisWeek)
-        {
-            ThisWeekRowsPanel.Children.Add(BuildThisWeekRow(task));
         }
     }
 

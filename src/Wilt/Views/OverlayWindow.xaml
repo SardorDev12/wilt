@@ -122,7 +122,7 @@
             <StackPanel x:Name="TaskModeHost" Orientation="Vertical" HorizontalAlignment="Center"
                         Visibility="Collapsed">
                 <Border x:Name="TaskTopBar" Style="{StaticResource WiltCapsuleBorder}" Padding="12,6" Margin="0,0,0,8"
-                        HorizontalAlignment="Stretch" Width="528" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
+                        HorizontalAlignment="Stretch" Width="280" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <TextBlock x:Name="TaskClockText" Text="00:00" Foreground="{StaticResource WiltTextBrush}"
                                    FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Semibold"
@@ -152,7 +152,7 @@
                 </Border>
 
                 <Border x:Name="MissedPanel" Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" Margin="0,0,0,8"
-                        HorizontalAlignment="Stretch" Width="528" Visibility="Collapsed">
+                        HorizontalAlignment="Stretch" Width="280" Visibility="Collapsed">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Missed" Foreground="{StaticResource WiltTextDimBrush}" FontSize="11"
                                    Margin="2,0,0,6" />
@@ -160,12 +160,18 @@
                     </StackPanel>
                 </Border>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" HorizontalAlignment="Stretch"
                         Width="280" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
                     <StackPanel Orientation="Vertical">
-                        <TextBlock Text="Today" Foreground="{StaticResource WiltTextBrush}" FontSize="13"
-                                   FontWeight="SemiBold" Margin="2,0,0,8" />
+                        <!-- Filters the one list below between today's actionable plan and a
+                             read-mostly look-ahead at the whole week - not two lists shown
+                             at once. -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button x:Name="TodayTabButton" Content="Today" Style="{StaticResource WiltTabButton}"
+                                    Click="OnTodayTabClick" Margin="0,0,4,0" />
+                            <Button x:Name="ThisWeekTabButton" Content="This week" Style="{StaticResource WiltTabButton}"
+                                    Click="OnThisWeekTabClick" />
+                        </StackPanel>
 
                         <!-- Defaults to ~5 visible rows; a longer list scrolls instead of
                              growing the window, but the handle below lets the user drag
@@ -237,26 +243,6 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-
-                <Border Style="{StaticResource WiltCapsuleBorder}" Padding="10,8" HorizontalAlignment="Stretch"
-                        Width="240" Margin="8,0,0,0" MouseLeftButtonDown="OnDragHandleMouseLeftButtonDown">
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="This week" Foreground="{StaticResource WiltTextBrush}" FontSize="13"
-                                   FontWeight="SemiBold" Margin="2,0,0,8" />
-
-                        <ScrollViewer x:Name="ThisWeekScroll" MaxHeight="165" VerticalScrollBarVisibility="Auto">
-                            <ScrollViewer.Resources>
-                                <Style TargetType="ScrollBar" BasedOn="{StaticResource WiltScrollBar}" />
-                            </ScrollViewer.Resources>
-                            <StackPanel x:Name="ThisWeekRowsPanel" Orientation="Vertical" />
-                        </ScrollViewer>
-
-                        <TextBlock x:Name="NoThisWeekText" Text="Nothing planned this week." FontSize="12"
-                                   Foreground="{StaticResource WiltTextBrush}" Opacity="0.75" Margin="2,4,0,0"
-                                   Visibility="Collapsed" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                </StackPanel>
             </StackPanel>
         </StackPanel>
     </Grid>

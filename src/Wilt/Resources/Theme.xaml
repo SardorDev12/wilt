@@ -60,6 +60,33 @@
         </Setter>
     </Style>
 
+    <!-- Small pill tab button (Today / This week) - active/inactive state is
+         set directly in code (Background/Foreground), same imperative style
+         as the rest of the app's dynamic UI. -->
+    <Style x:Key="WiltTabButton" TargetType="Button">
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource WiltTextDimBrush}" />
+        <Setter Property="Background" Value="#00FFFFFF" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="10">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource WiltAccentDimBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Thin, theme-colored scrollbar for the overlay's Task list - no arrow
          buttons, just a track and a slim thumb, instead of Windows' default
          wide chrome scrollbar. Keyed rather than a global TargetType style:
