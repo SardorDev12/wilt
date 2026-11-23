@@ -27,7 +27,8 @@ public partial class TaskManagerWindow : Window
 
         _items = new ObservableCollection<WorkTask>(_taskEngine.AllTasks);
         TasksGrid.ItemsSource = _items;
-        NewDatePicker.SelectedDate = DateTime.Today;
+        NewStartDatePicker.SelectedDate = DateTime.Today;
+        NewEndDatePicker.SelectedDate = DateTime.Today;
 
         _taskEngine.TasksChanged += OnTasksChangedElsewhere;
         Closed += (_, _) => _taskEngine.TasksChanged -= OnTasksChangedElsewhere;
@@ -67,8 +68,15 @@ public partial class TaskManagerWindow : Window
     private void Persist(WorkTask task)
     {
         _suppressReload = true;
-        _taskEngine.UpdateTask(task.Id, task.Name, task.PlannedMinutes, task.Date, task.IsDone);
+        _taskEngine.UpdateTask(task.Id, task.Name, task.PlannedMinutes, task.Date, task.EndDate, task.IsDone);
         _suppressReload = false;
+
+        // Editing Start date in the grid doesn't auto-fix an End date that's
+        // now earlier than it (UpdateTask clamps it), so reflect that back.
+        if (task.EndDate < task.Date)
+        {
+            task.EndDate = task.Date;
+        }
     }
 
     private void OnAddClick(object sender, RoutedEventArgs e)
@@ -79,15 +87,17 @@ public partial class TaskManagerWindow : Window
             return;
         }
 
-        var date = NewDatePicker.SelectedDate ?? DateTime.Today;
+        var startDate = NewStartDatePicker.SelectedDate ?? DateTime.Today;
+        var endDate = NewEndDatePicker.SelectedDate ?? startDate;
 
         _suppressReload = true;
-        _taskEngine.AddTask(name, minutes, date);
+        _taskEngine.AddTask(name, minutes, startDate, endDate);
         _suppressReload = false;
 
         NewNameBox.Text = "";
         NewMinutesBox.Text = "";
-        NewDatePicker.SelectedDate = DateTime.Today;
+        NewStartDatePicker.SelectedDate = DateTime.Today;
+        NewEndDatePicker.SelectedDate = DateTime.Today;
 
         Reload();
     }

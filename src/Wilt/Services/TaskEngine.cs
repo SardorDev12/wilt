@@ -33,26 +33,37 @@ public class TaskEngine
         _timer.Start();
     }
 
+    /// <summary>
+    /// Today's plan: every task whose [Date, EndDate] range includes today -
+    /// a multi-day/"weekly" task (planned across a date range in the Task
+    /// Manager window) reappears here on each of its days, not just once.
+    /// </summary>
     public IReadOnlyList<WorkTask> TodayTasks =>
-        _tasks.Where(t => t.Date.Date == DateTime.Today).ToList();
+        _tasks.Where(t => t.Date.Date <= DateTime.Today && t.EndDate.Date >= DateTime.Today).ToList();
 
+    /// <summary>A task counts as missed only once its *whole* range has passed undone.</summary>
     public IReadOnlyList<WorkTask> MissedTasks =>
-        _tasks.Where(t => t.Date.Date < DateTime.Today && !t.IsDone).ToList();
+        _tasks.Where(t => t.EndDate.Date < DateTime.Today && !t.IsDone).ToList();
 
     public WorkTask? ActiveTask => ActiveTaskId.HasValue ? _tasks.FirstOrDefault(t => t.Id == ActiveTaskId.Value) : null;
 
     /// <summary>Every task regardless of date, newest first - for the Task Manager window (Settings).</summary>
     public IReadOnlyList<WorkTask> AllTasks => _tasks.OrderByDescending(t => t.Date).ToList();
 
-    public WorkTask AddTask(string name, int plannedMinutes) => AddTask(name, plannedMinutes, DateTime.Today);
+    public WorkTask AddTask(string name, int plannedMinutes) => AddTask(name, plannedMinutes, DateTime.Today, DateTime.Today);
 
-    public WorkTask AddTask(string name, int plannedMinutes, DateTime date)
+    /// <summary>A single-day task - shorthand for AddTask with Date == EndDate.</summary>
+    public WorkTask AddTask(string name, int plannedMinutes, DateTime date) => AddTask(name, plannedMinutes, date, date);
+
+    /// <summary>A task planned across a date range (the Task Manager window's "weekly" planning) - appears in every day's list from startDate through endDate.</summary>
+    public WorkTask AddTask(string name, int plannedMinutes, DateTime startDate, DateTime endDate)
     {
         var task = new WorkTask
         {
             Name = name,
             PlannedMinutes = plannedMinutes,
-            Date = date.Date,
+            Date = startDate.Date,
+            EndDate = endDate.Date < startDate.Date ? startDate.Date : endDate.Date,
         };
         _tasks.Add(task);
         Save();
@@ -60,7 +71,7 @@ public class TaskEngine
     }
 
     /// <summary>Full edit of a task's fields (Task Manager window) - distinct from the in-flow ToggleDone/MoveMissedToToday actions.</summary>
-    public void UpdateTask(Guid id, string name, int plannedMinutes, DateTime date, bool isDone)
+    public void UpdateTask(Guid id, string name, int plannedMinutes, DateTime startDate, DateTime endDate, bool isDone)
     {
         var task = _tasks.FirstOrDefault(t => t.Id == id);
         if (task == null)
@@ -70,7 +81,8 @@ public class TaskEngine
 
         task.Name = name;
         task.PlannedMinutes = plannedMinutes;
-        task.Date = date.Date;
+        task.Date = startDate.Date;
+        task.EndDate = endDate.Date < startDate.Date ? startDate.Date : endDate.Date;
         task.IsDone = isDone;
 
         if (isDone && ActiveTaskId == id)
@@ -189,7 +201,10 @@ public class TaskEngine
             return;
         }
 
+        // Collapses a passed multi-day range down to a single day (today) -
+        // re-extending it to a new range is a job for the Task Manager window.
         task.Date = DateTime.Today;
+        task.EndDate = DateTime.Today;
         Save();
     }
 

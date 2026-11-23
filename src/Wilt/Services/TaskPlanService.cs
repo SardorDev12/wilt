@@ -37,6 +37,16 @@ public class TaskPlanService
                 var loaded = JsonSerializer.Deserialize<List<WorkTask>>(json);
                 if (loaded != null)
                 {
+                    // Tasks saved before EndDate existed come back with it
+                    // defaulted - treat them as the single-day tasks they were.
+                    foreach (var task in loaded)
+                    {
+                        if (task.EndDate < task.Date)
+                        {
+                            task.EndDate = task.Date;
+                        }
+                    }
+
                     return loaded;
                 }
             }

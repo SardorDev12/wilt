@@ -534,8 +534,15 @@ public partial class OverlayWindow : Window
         CloseAddTaskForm();
     }
 
-    private static string FormatTaskLabel(WorkTask task, int number) =>
-        $"{number}. {task.Name} — {(int)(task.WorkedSeconds / 60)}/{task.PlannedMinutes}";
+    private static string FormatTaskLabel(WorkTask task, int number)
+    {
+        // A multi-day/"weekly" task (planned across a date range in the Task
+        // Manager window) carries its range along wherever it reappears, so
+        // it reads as one ongoing task rather than looking identical to a
+        // plain single-day one.
+        var range = task.EndDate.Date > task.Date.Date ? $" ({task.Date:MMM d}–{task.EndDate:MMM d})" : "";
+        return $"{number}. {task.Name}{range} — {(int)(task.WorkedSeconds / 60)}/{task.PlannedMinutes}";
+    }
 
     private void UpdateTaskClock()
     {
