@@ -381,6 +381,19 @@ public partial class OverlayWindow : Window
     private Point _taskListResizeStartMouse;
     private double _taskListResizeStartHeight;
 
+    private void OnTaskListResizeMouseEnter(object sender, MouseEventArgs e)
+    {
+        TaskListResizeHandlePill.Background = (Brush)FindResource("WiltAccentBrush");
+    }
+
+    private void OnTaskListResizeMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (!_resizingTaskList)
+        {
+            TaskListResizeHandlePill.Background = (Brush)FindResource("WiltCapsuleBorderBrush");
+        }
+    }
+
     private void OnTaskListResizeMouseDown(object sender, MouseButtonEventArgs e)
     {
         _resizingTaskList = true;
@@ -397,7 +410,18 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        var delta = e.GetPosition(this).Y - _taskListResizeStartMouse.Y;
+        // GetPosition(this) is relative to the Window, outside the overlay's
+        // own LayoutTransform (OverlayScaleTransform) - so it reports raw
+        // screen-pixel movement, not the "logical" units MaxHeight is in.
+        // At any scale other than 1.0, a drag of N screen pixels needs to
+        // change MaxHeight by N / scale to track the mouse correctly.
+        var scale = OverlayScaleTransform.ScaleY;
+        if (scale <= 0)
+        {
+            scale = 1;
+        }
+
+        var delta = (e.GetPosition(this).Y - _taskListResizeStartMouse.Y) / scale;
 
         // The floor is wherever the list already was when this drag started
         // (itself never below the shipped default) - so it only ever grows
@@ -415,6 +439,11 @@ public partial class OverlayWindow : Window
 
         _resizingTaskList = false;
         TaskListResizeHandle.ReleaseMouseCapture();
+
+        if (!TaskListResizeHandle.IsMouseOver)
+        {
+            TaskListResizeHandlePill.Background = (Brush)FindResource("WiltCapsuleBorderBrush");
+        }
 
         var settings = _settingsService.Current.Clone();
         settings.TaskListHeight = TaskListScroll.MaxHeight;

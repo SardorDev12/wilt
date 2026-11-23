@@ -188,14 +188,17 @@
                              DragDelta mechanism never reliably engaged in this layered,
                              per-pixel-alpha window even with a non-zero-alpha background, so
                              this drives the resize directly off MouseMove instead, the same
-                             way window dragging elsewhere in this app is handled. -->
-                        <Border x:Name="TaskListResizeHandle" Height="10" Margin="0,2,0,2" Cursor="SizeNS"
+                             way window dragging elsewhere in this app is handled. Taller hit
+                             area than before, plus a hover highlight, since a thin 10px strip
+                             was apparently too easy to miss to reliably grab in the first place. -->
+                        <Border x:Name="TaskListResizeHandle" Height="18" Margin="0,0,0,-4" Cursor="SizeNS"
                                 Background="#01000000" ToolTip="Drag to resize the task list"
+                                MouseEnter="OnTaskListResizeMouseEnter" MouseLeave="OnTaskListResizeMouseLeave"
                                 MouseLeftButtonDown="OnTaskListResizeMouseDown"
                                 MouseMove="OnTaskListResizeMouseMove" MouseLeftButtonUp="OnTaskListResizeMouseUp">
-                            <Border Width="28" Height="3" CornerRadius="1.5" HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" Background="{StaticResource WiltCapsuleBorderBrush}"
-                                    IsHitTestVisible="False" />
+                            <Border x:Name="TaskListResizeHandlePill" Width="32" Height="4" CornerRadius="2"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Background="{StaticResource WiltCapsuleBorderBrush}" IsHitTestVisible="False" />
                         </Border>
 
                         <TextBlock x:Name="NoTasksText" Text="No tasks yet today." FontSize="12"
